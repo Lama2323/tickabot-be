@@ -21,11 +21,29 @@ const routeSchema = z.object({
 
 export async function sendToRouteGemini(ticket_content: string) {
 
-  let prompt = `Hãy dựa vào nội dung ticket sau đây, 
-  hãy phân định độ phức tạp của ticket (easy, medium, hard), 
-  độ ưu tiên của ticket (low, medium, high), 
-  và loại ticket ` + ticket_content + 
-  ` theo cấu trúc 
+  let prompt = `Phân tích ticket dưới đây và xác định các thông số sau:
+
+  **Yêu cầu:**
+  1. Độ phức tạp (ticket_difficulty):
+     - "easy": Công việc đơn giản, có thể để LLM tự đưa ra câu trả lời
+     - "medium": Công việc trung bình, cần route đến bộ phận khác để xử lý
+     - "hard": Công việc phức tạp, cần route đến bộ phận khác để xử lý
+  
+  2. Độ ưu tiên (ticket_priority):
+     - "high": Cần xử lý ngay, ảnh hưởng nghiêm trọng đến hệ thống/người dùng
+     - "medium": Cần xử lý sớm, nhưng không quá khẩn cấp
+     - "low": Có thể xử lý sau, không ảnh hưởng đến hoạt động chính
+  
+  3. Loại ticket (ticket_type):
+     - "bug": Lỗi phần mềm cần xử lý
+     - "feature": Yêu cầu tính năng mới
+     - "task": Công việc phát triển khác
+     - "question": Câu hỏi cần giải đáp
+
+  **Ticket cần phân tích:**
+  ${ticket_content}
+
+  **Kết quả trả về theo cấu trúc JSON sau:**
   {
     "ticket_difficulty": "easy | medium | hard",
     "ticket_priority": "low | medium | high",
