@@ -29,11 +29,18 @@ export const ticketController = {
 
   createTicket: async (req: Request, res: Response) => {
     try {
-      const { ticket_priority, ticket_content } = req.body;
-      if (ticket_priority === undefined || ticket_content === undefined) {
-        return res.status(400).json({ message: 'Ticket priority and content are required' });
+      const { ticket_priority, ticket_content, ticket_type, ticket_difficulty } = req.body;
+      if (!ticket_priority || !ticket_content || !ticket_type || !ticket_difficulty) {
+        return res.status(400).json({ 
+          message: 'Ticket priority, content, type, and difficulty are required' 
+        });
       }
-      const data = await ticketService.createTicket(ticket_priority, ticket_content);
+      const data = await ticketService.createTicket(
+        ticket_priority, 
+        ticket_content, 
+        ticket_type, 
+        ticket_difficulty
+      );
       res.status(201).json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -43,14 +50,22 @@ export const ticketController = {
   updateTicket: async (req: Request, res: Response) => {
     try {
       const { ticket_id } = req.params;
-      const { ticket_priority, ticket_content } = req.body;
+      const { ticket_priority, ticket_content, ticket_type, ticket_difficulty } = req.body;
       if (!ticket_id) {
         return res.status(400).json({ message: 'Ticket ID is required' });
       }
-      if (ticket_priority === undefined || ticket_content === undefined) {
-        return res.status(400).json({ message: 'Ticket priority and content are required' });
+      if (!ticket_priority || !ticket_content || !ticket_type || !ticket_difficulty) {
+        return res.status(400).json({ 
+          message: 'Ticket priority, content, type, and difficulty are required' 
+        });
       }
-      const data = await ticketService.updateTicket(ticket_id, ticket_priority, ticket_content);
+      const data = await ticketService.updateTicket(
+        ticket_id, 
+        ticket_priority, 
+        ticket_content, 
+        ticket_type, 
+        ticket_difficulty
+      );
       if (!data || data.length === 0) {
         return res.status(404).json({ message: 'Ticket not found' });
       }

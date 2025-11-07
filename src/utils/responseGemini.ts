@@ -12,29 +12,21 @@ if (!GEMINI_API_KEY) {
 const llm = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 export async function sendToResponseGemini(ticket_content: string) {
+
+  let prompt = ticket_content;
+
   try {
-    const result = await llm.models.generateContentStream({
+    const response = await llm.models.generateContent({
       model: 'gemini-2.5-flash-lite', // tên model
       config: {
         thinkingConfig: {
-          includeThoughts: false,  // không suy nghĩ
+          thinkingBudget: 0  // không suy nghĩ
         },
       },
-      contents: [{ 
-        role: 'user', 
-        parts: [{ 
-          text: ticket_content    // nội dung ticket
-        }] 
-      }],
+      contents: prompt    // nội dung ticket
     });
 
-    console.log('Streaming response from Gemini:');
-    for await (const chunk of result) {
-      const chunkText = chunk.text;
-      if (chunkText) {
-        process.stdout.write(chunkText);
-      }
-    }
+    console.log(response.text);
     console.log('\n\nGemini stream complete.');
   } catch (error) {
     console.error('Error sending ticket content to Gemini:', error);

@@ -18,10 +18,20 @@ export const ticketService = {
     return data;
   },
 
-  createTicket: async (ticket_priority: string, ticket_content: string) => {
+  createTicket: async (
+    ticket_priority: string, 
+    ticket_content: string, 
+    ticket_type: string, 
+    ticket_difficulty: string
+  ) => {
     const { data, error } = await supabase
       .from('ticket')
-      .insert([{ ticket_priority: ticket_priority, ticket_content: ticket_content }])
+      .insert([{ 
+        ticket_priority, 
+        ticket_content, 
+        ticket_type, 
+        ticket_difficulty 
+      }])
       .select();
     if (error) throw error;
 
@@ -31,10 +41,21 @@ export const ticketService = {
     return data;
   },
 
-  updateTicket: async (ticket_id: string, ticket_priority: string, ticket_content: string) => {
+  updateTicket: async (
+    ticket_id: string, 
+    ticket_priority: string, 
+    ticket_content: string, 
+    ticket_type: string, 
+    ticket_difficulty: string
+  ) => {
     const { data, error } = await supabase
       .from('ticket')
-      .update({ ticket_priority: ticket_priority, ticket_content: ticket_content })
+      .update({ 
+        ticket_priority, 
+        ticket_content, 
+        ticket_type, 
+        ticket_difficulty 
+      })
       .eq('ticket_id', ticket_id)
       .select();
     if (error) throw error;
