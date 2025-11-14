@@ -1,5 +1,5 @@
 export { ticketService } from './ticketService';
 export { profileService } from './profileService';
 export { teamService } from './teamService';
-export { agentService } from './agentService'; 
+export { supporterService } from './supporterService'; 
 export { responseService } from './responseService';
