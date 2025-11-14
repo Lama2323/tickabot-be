@@ -29,17 +29,28 @@ export const ticketController = {
 
   createTicket: async (req: Request, res: Response) => {
     try {
-      const { ticket_priority, ticket_content, ticket_type, ticket_difficulty } = req.body;
+      const { 
+        ticket_priority, 
+        ticket_content, 
+        ticket_type, 
+        ticket_difficulty, 
+        response_id, 
+        team_id 
+      } = req.body;
+      
       if (!ticket_priority || !ticket_content || !ticket_type || !ticket_difficulty) {
         return res.status(400).json({ 
           message: 'Ticket priority, content, type, and difficulty are required' 
         });
       }
+      
       const data = await ticketService.createTicket(
         ticket_priority, 
         ticket_content, 
         ticket_type, 
-        ticket_difficulty
+        ticket_difficulty,
+        response_id,
+        team_id
       );
       res.status(201).json(data);
     } catch (error: any) {
@@ -50,7 +61,15 @@ export const ticketController = {
   updateTicket: async (req: Request, res: Response) => {
     try {
       const { ticket_id } = req.params;
-      const { ticket_priority, ticket_content, ticket_type, ticket_difficulty } = req.body;
+      const { 
+        ticket_priority, 
+        ticket_content, 
+        ticket_type, 
+        ticket_difficulty, 
+        response_id, 
+        team_id 
+      } = req.body;
+      
       if (!ticket_id) {
         return res.status(400).json({ message: 'Ticket ID is required' });
       }
@@ -59,12 +78,15 @@ export const ticketController = {
           message: 'Ticket priority, content, type, and difficulty are required' 
         });
       }
+      
       const data = await ticketService.updateTicket(
         ticket_id, 
         ticket_priority, 
         ticket_content, 
         ticket_type, 
-        ticket_difficulty
+        ticket_difficulty,
+        response_id,
+        team_id
       );
       if (!data || data.length === 0) {
         return res.status(404).json({ message: 'Ticket not found' });

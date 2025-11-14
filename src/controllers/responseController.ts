@@ -29,11 +29,11 @@ export const responseController = {
 
   createResponse: async (req: Request, res: Response) => {
     try {
-      const { ticket_id, response_content } = req.body;
+      const { ticket_id, response_content, team_id = null } = req.body;
       if (ticket_id === undefined || response_content === undefined) {
         return res.status(400).json({ message: 'Ticket ID and response_content are required' });
       }
-      const data = await responseService.createResponse(ticket_id, response_content);
+      const data = await responseService.createResponse(ticket_id, response_content, team_id);
       res.status(201).json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -43,14 +43,14 @@ export const responseController = {
   updateResponse: async (req: Request, res: Response) => {
     try {
       const { response_id } = req.params;
-      const { ticket_id, response_content } = req.body;
+      const { ticket_id, response_content, team_id = null } = req.body;
       if (!response_id) {
         return res.status(400).json({ message: 'Response ID is required' });
       }
       if (ticket_id === undefined || response_content === undefined) {
         return res.status(400).json({ message: 'Ticket ID and response_content are required' });
       }
-      const data = await responseService.updateResponse(response_id, ticket_id, response_content);
+      const data = await responseService.updateResponse(response_id, ticket_id, response_content, team_id);
       if (!data || data.length === 0) {
         return res.status(404).json({ message: 'Response not found' });
       }

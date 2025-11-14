@@ -22,7 +22,9 @@ export const ticketService = {
     ticket_priority: string, 
     ticket_content: string, 
     ticket_type: string, 
-    ticket_difficulty: string
+    ticket_difficulty: string,
+    response_id?: string,
+    team_id?: string
   ) => {
     const { data, error } = await supabase
       .from('ticket')
@@ -30,7 +32,9 @@ export const ticketService = {
         ticket_priority, 
         ticket_content, 
         ticket_type, 
-        ticket_difficulty 
+        ticket_difficulty,
+        response_id,
+        team_id
       }])
       .select();
     if (error) throw error;
@@ -46,7 +50,9 @@ export const ticketService = {
     ticket_priority: string, 
     ticket_content: string, 
     ticket_type: string, 
-    ticket_difficulty: string
+    ticket_difficulty: string,
+    response_id?: string,
+    team_id?: string
   ) => {
     const { data, error } = await supabase
       .from('ticket')
@@ -54,7 +60,9 @@ export const ticketService = {
         ticket_priority, 
         ticket_content, 
         ticket_type, 
-        ticket_difficulty 
+        ticket_difficulty,
+        response_id,
+        team_id
       })
       .eq('ticket_id', ticket_id)
       .select();

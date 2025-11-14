@@ -72,4 +72,26 @@ export const supporterController = {
       res.status(500).json({ error: error.message });
     }
   },
+
+  getUnansweredTickets: async (req: Request, res: Response) => {
+    try {
+      const { supporter_id } = req.params;
+      
+      if (!supporter_id) {
+        return res.status(400).json({ message: 'Supporter ID is required' });
+      }
+
+      // Get supporter to get their team_id
+      const supporter = await supporterService.getSupporterById(supporter_id);
+      if (!supporter) {
+        return res.status(404).json({ message: 'Supporter not found' });
+      }
+
+      // Get unanswered tickets for the supporter's team
+      const tickets = await supporterService.getUnansweredTicketsByTeam(supporter.team_id);
+      res.status(200).json(tickets);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };

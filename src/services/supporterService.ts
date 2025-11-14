@@ -41,4 +41,14 @@ export const supporterService = {
     if (error) throw error;
     return;
   },
+
+  getUnansweredTicketsByTeam: async (team_id: string) => {
+    const { data, error } = await supabase
+      .from('ticket')
+      .select('*')
+      .eq('team_id', team_id)
+      .is('response_id', null);
+    if (error) throw error;
+    return data;
+  },
 };
