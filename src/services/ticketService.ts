@@ -75,4 +75,33 @@ export const ticketService = {
     if (error) throw error;
     return;
   },
+
+  getTicketsByStatus: async (status: 'pending' | 'responded', supporter_id: string) => {
+    // First get the supporter to get their team_id
+    const { data: supporter, error: supporterError } = await supabase
+      .from('supporter')
+      .select('team_id')
+      .eq('supporter_id', supporter_id)
+      .single();
+      
+    if (supporterError || !supporter) {
+      throw new Error('Supporter not found');
+    }
+
+    // Then get tickets based on status
+    let query = supabase
+      .from('ticket')
+      .select('*')
+      .eq('team_id', supporter.team_id);
+
+    if (status === 'pending') {
+      query = query.is('response_content', null);
+    } else {
+      query = query.not('response_content', 'is', null);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
 };

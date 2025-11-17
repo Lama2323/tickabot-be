@@ -40,26 +40,5 @@ export const supporterService = {
     const { error } = await supabase.from('supporter').delete().eq('supporter_id', supporter_id);
     if (error) throw error;
     return;
-  },
-
-  getPendingTicketsByTeam: async (team_id: string) => {
-    const { data, error } = await supabase
-      .from('ticket')
-      .select('*')
-      .eq('team_id', team_id)
-      .is('response_content', null);
-    if (error) throw error;
-    return data;
-  },
-
-  getRespondedTicketsByTeam: async (team_id: string) => {
-    const { data, error } = await supabase
-      .from('ticket')
-      .select('*')
-      .eq('team_id', team_id)
-      .not('response_content', 'is', null);
-      
-    if (error) throw error;
-    return data;
   }
 };
