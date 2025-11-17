@@ -42,13 +42,24 @@ export const supporterService = {
     return;
   },
 
-  getUnansweredTicketsByTeam: async (team_id: string) => {
+  getPendingTicketsByTeam: async (team_id: string) => {
     const { data, error } = await supabase
       .from('ticket')
       .select('*')
       .eq('team_id', team_id)
-      .is('response_id', null);
+      .is('response_content', null);
     if (error) throw error;
     return data;
   },
+
+  getRespondedTicketsByTeam: async (team_id: string) => {
+    const { data, error } = await supabase
+      .from('ticket')
+      .select('*')
+      .eq('team_id', team_id)
+      .not('response_content', 'is', null);
+      
+    if (error) throw error;
+    return data;
+  }
 };

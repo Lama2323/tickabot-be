@@ -16,7 +16,7 @@ const llm = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 const routeSchema = z.object({
   ticket_difficulty: z.enum(['easy', 'medium', 'hard']),
   ticket_priority: z.enum(['low', 'medium', 'high']),
-  ticket_type: z.enum(['bug', 'feature', 'task', 'question']),
+  ticket_tone: z.enum(['happy', 'neutral', 'frustrated', 'angry', 'confused']),
 });
 
 export async function sendToRouteGemini(ticket_content: string) {
@@ -34,11 +34,12 @@ export async function sendToRouteGemini(ticket_content: string) {
      - "medium": Cần xử lý sớm, nhưng không quá khẩn cấp
      - "low": Có thể xử lý sau, không ảnh hưởng đến hoạt động chính
   
-  3. Loại ticket (ticket_type):
-     - "bug": Lỗi phần mềm cần xử lý
-     - "feature": Yêu cầu tính năng mới
-     - "task": Công việc phát triển khác
-     - "question": Câu hỏi cần giải đáp
+  3. Cảm xúc của người dùng (ticket_tone):
+     - "happy": Vui vẻ, hài lòng
+     - "neutral": Bình thường, trung lập
+     - "frustrated": Bực bội, khó chịu
+     - "angry": Tức giận, không hài lòng
+     - "confused": Bối rối, cần giải thích thêm
 
   **Ticket cần phân tích:**
   ${ticket_content}
@@ -47,7 +48,7 @@ export async function sendToRouteGemini(ticket_content: string) {
   {
     "ticket_difficulty": "easy | medium | hard",
     "ticket_priority": "low | medium | high",
-    "ticket_type": "bug | feature | task | question"
+    "ticket_tone": "happy | neutral | frustrated | angry | confused"
   }`;
 
   try {

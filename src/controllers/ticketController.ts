@@ -34,7 +34,7 @@ export const ticketController = {
         ticket_content, 
         ticket_type, 
         ticket_difficulty, 
-        response_id, 
+        response_content = null, 
         team_id 
       } = req.body;
       
@@ -49,7 +49,7 @@ export const ticketController = {
         ticket_content, 
         ticket_type, 
         ticket_difficulty,
-        response_id,
+        response_content,
         team_id
       );
       res.status(201).json(data);
@@ -66,7 +66,7 @@ export const ticketController = {
         ticket_content, 
         ticket_type, 
         ticket_difficulty, 
-        response_id, 
+        response_content = null, 
         team_id 
       } = req.body;
       
@@ -85,7 +85,7 @@ export const ticketController = {
         ticket_content, 
         ticket_type, 
         ticket_difficulty,
-        response_id,
+        response_content,
         team_id
       );
       if (!data || data.length === 0) {
