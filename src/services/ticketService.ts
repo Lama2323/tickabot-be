@@ -21,7 +21,7 @@ export const ticketService = {
   createTicket: async (
     ticket_priority: string, 
     ticket_content: string, 
-    ticket_type: string, 
+    ticket_tone: string, 
     ticket_difficulty: string,
     response_content: string | null = null,
     team_id?: string
@@ -31,7 +31,7 @@ export const ticketService = {
       .insert([{ 
         ticket_priority, 
         ticket_content, 
-        ticket_type, 
+        ticket_tone, 
         ticket_difficulty,
         response_content,
         team_id
@@ -49,7 +49,7 @@ export const ticketService = {
     ticket_id: string, 
     ticket_priority: string, 
     ticket_content: string, 
-    ticket_type: string, 
+    ticket_tone: string, 
     ticket_difficulty: string,
     response_content: string | null = null,
     team_id?: string
@@ -59,7 +59,7 @@ export const ticketService = {
       .update({ 
         ticket_priority, 
         ticket_content, 
-        ticket_type, 
+        ticket_tone, 
         ticket_difficulty,
         response_content,
         team_id
