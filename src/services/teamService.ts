@@ -41,4 +41,13 @@ export const teamService = {
     if (error) throw error;
     return;
   },
+
+  getAllTeamNameAndDescription: async () => {
+    const { data, error } = await supabase
+      .from('team')
+      .select('team_id, team_name, team_description');
+    if (error) throw error;
+    return data;
+  },
+
 };
