@@ -18,7 +18,7 @@ const routeSchema = z.object({
   ticket_difficulty: z.enum(['easy', 'medium', 'hard']),
   ticket_priority: z.enum(['low', 'medium', 'high']),
   ticket_tone: z.enum(['happy', 'neutral', 'frustrated', 'angry', 'confused']),
-  team_id: z.string().uuid(),
+  team_id: z.string().uuid().nullable(),
 });
 
 export async function sendToRouteGemini(ticket_content: string) {

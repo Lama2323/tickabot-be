@@ -30,7 +30,7 @@ export const ticketService = {
     response_content: string | null = null,
     team_id?: string
   ) => {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('ticket')
       .insert([{
         ticket_priority,
@@ -44,7 +44,7 @@ export const ticketService = {
     if (error) throw error;
 
     // Gửi nội dung ticket đến Gemini và ghi phản hồi
-    if (ticket_content) {
+    if (ticket_content && data && data.length > 0) {
       try {
         const routeResult = await sendToRouteGemini(ticket_content);
         const routeData = JSON.parse(routeResult);
@@ -59,7 +59,7 @@ export const ticketService = {
 
           const geminiResponse = await sendToResponseGemini(ticket_content, context);
 
-          await supabase
+          const { data: updatedData } = await supabase
             .from('ticket')
             .update({
               ticket_priority: routeData.ticket_priority,
@@ -68,10 +68,15 @@ export const ticketService = {
               team_id: routeData.team_id,
               response_content: geminiResponse
             })
-            .eq('ticket_id', data[0].ticket_id);
+            .eq('ticket_id', data[0].ticket_id)
+            .select();
+
+          if (updatedData) {
+            data = updatedData;
+          }
 
         } else {
-          await supabase
+          const { data: updatedData } = await supabase
             .from('ticket')
             .update({
               ticket_priority: routeData.ticket_priority,
@@ -79,7 +84,12 @@ export const ticketService = {
               ticket_difficulty: routeData.ticket_difficulty,
               team_id: routeData.team_id
             })
-            .eq('ticket_id', data[0].ticket_id);
+            .eq('ticket_id', data[0].ticket_id)
+            .select();
+
+          if (updatedData) {
+            data = updatedData;
+          }
         }
       } catch (err) {
         console.error("Error processing ticket with Gemini:", err);

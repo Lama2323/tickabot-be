@@ -15,7 +15,7 @@ interface TicketContext {
   ticket_difficulty: string;
   ticket_priority: string;
   ticket_tone: string;
-  team_id: string;
+  team_id: string | null;
 }
 
 export async function sendToResponseGemini(ticket_content: string, context: TicketContext) {
