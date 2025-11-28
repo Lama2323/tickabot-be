@@ -45,7 +45,7 @@ export async function sendToResponseGemini(ticket_content: string, context: Tick
       model: 'gemini-2.5-flash-lite', // tên model
       config: {
         thinkingConfig: {
-          thinkingBudget: 0  // không suy nghĩ
+          thinkingBudget: -1  // không suy nghĩ
         },
       },
       contents: prompt    // nội dung ticket
