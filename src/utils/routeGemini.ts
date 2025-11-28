@@ -46,7 +46,9 @@ export async function sendToRouteGemini(ticket_content: string) {
      - "confused": Bối rối, cần giải thích thêm
 
   4. Đội ngũ xử lý (team_id):
-     Dựa vào nội dung ticket và danh sách các team dưới đây, hãy chọn team_id phù hợp nhất để xử lý ticket này.
+     Dựa vào nội dung ticket và danh sách các team dưới đây, 
+     hãy chọn team_id phù hợp nhất để xử lý ticket này, 
+     nếu ticket_difficulty là "easy", hãy chọn team_id là null.
      Danh sách team:
      ${teamsJson}
 
@@ -74,8 +76,10 @@ export async function sendToRouteGemini(ticket_content: string) {
       contents: prompt,
     });
 
-    console.log(response.text);
-    console.log('\n\nGemini stream complete.');
+    if (!response.text) {
+      throw new Error('Gemini response is empty');
+    }
+
     return response.text;
   } catch (error) {
     console.error('Error sending ticket content to Gemini:', error);

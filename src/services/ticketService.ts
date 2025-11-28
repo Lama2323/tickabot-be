@@ -1,9 +1,13 @@
 import { supabase } from '../utils/supabase';
+import { sendToRouteGemini } from '../utils/routeGemini';
 import { sendToResponseGemini } from '../utils/responseGemini';
+
 
 export const ticketService = {
   getAllTickets: async () => {
-    const { data, error } = await supabase.from('ticket').select('*');
+    const { data, error } = await supabase
+      .from('ticket')
+      .select('*');
     if (error) throw error;
     return data;
   },
@@ -19,19 +23,19 @@ export const ticketService = {
   },
 
   createTicket: async (
-    ticket_priority: string, 
-    ticket_content: string, 
-    ticket_tone: string, 
-    ticket_difficulty: string,
+    ticket_priority: string | null,
+    ticket_content: string | null,
+    ticket_tone: string | null,
+    ticket_difficulty: string | null,
     response_content: string | null = null,
     team_id?: string
   ) => {
     const { data, error } = await supabase
       .from('ticket')
-      .insert([{ 
-        ticket_priority, 
-        ticket_content, 
-        ticket_tone, 
+      .insert([{
+        ticket_priority,
+        ticket_content,
+        ticket_tone,
         ticket_difficulty,
         response_content,
         team_id
@@ -40,26 +44,66 @@ export const ticketService = {
     if (error) throw error;
 
     // Gửi nội dung ticket đến Gemini và ghi phản hồi
-    await sendToResponseGemini(ticket_content);
+    if (ticket_content) {
+      try {
+        const routeResult = await sendToRouteGemini(ticket_content);
+        const routeData = JSON.parse(routeResult);
+
+        if (routeData.ticket_difficulty === 'easy') {
+          const context = {
+            ticket_priority: routeData.ticket_priority,
+            ticket_tone: routeData.ticket_tone,
+            ticket_difficulty: routeData.ticket_difficulty,
+            team_id: routeData.team_id
+          };
+
+          const geminiResponse = await sendToResponseGemini(ticket_content, context);
+
+          await supabase
+            .from('ticket')
+            .update({
+              ticket_priority: routeData.ticket_priority,
+              ticket_tone: routeData.ticket_tone,
+              ticket_difficulty: routeData.ticket_difficulty,
+              team_id: routeData.team_id,
+              response_content: geminiResponse
+            })
+            .eq('ticket_id', data[0].ticket_id);
+
+        } else {
+          await supabase
+            .from('ticket')
+            .update({
+              ticket_priority: routeData.ticket_priority,
+              ticket_tone: routeData.ticket_tone,
+              ticket_difficulty: routeData.ticket_difficulty,
+              team_id: routeData.team_id
+            })
+            .eq('ticket_id', data[0].ticket_id);
+        }
+      } catch (err) {
+        console.error("Error processing ticket with Gemini:", err);
+      }
+    }
 
     return data;
   },
 
   updateTicket: async (
-    ticket_id: string, 
-    ticket_priority: string, 
-    ticket_content: string, 
-    ticket_tone: string, 
-    ticket_difficulty: string,
+    ticket_id: string,
+    ticket_priority: string | null,
+    ticket_content: string | null,
+    ticket_tone: string | null,
+    ticket_difficulty: string | null,
     response_content: string | null = null,
     team_id?: string
   ) => {
     const { data, error } = await supabase
       .from('ticket')
-      .update({ 
-        ticket_priority, 
-        ticket_content, 
-        ticket_tone, 
+      .update({
+        ticket_priority,
+        ticket_content,
+        ticket_tone,
         ticket_difficulty,
         response_content,
         team_id
@@ -71,7 +115,10 @@ export const ticketService = {
   },
 
   deleteTicket: async (ticket_id: string) => {
-    const { error } = await supabase.from('ticket').delete().eq('ticket_id', ticket_id);
+    const { error } = await supabase
+      .from('ticket')
+      .delete()
+      .eq('ticket_id', ticket_id);
     if (error) throw error;
     return;
   },
@@ -83,7 +130,7 @@ export const ticketService = {
       .select('team_id')
       .eq('supporter_id', supporter_id)
       .single();
-      
+
     if (supporterError || !supporter) {
       throw new Error('Supporter not found');
     }

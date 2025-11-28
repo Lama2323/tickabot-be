@@ -2,7 +2,9 @@ import { supabase } from '../utils/supabase';
 
 export const teamService = {
   getAllTeams: async () => {
-    const { data, error } = await supabase.from('team').select('*');
+    const { data, error } = await supabase
+    .from('team')
+    .select('*');
     if (error) throw error;
     return data;
   },
@@ -37,7 +39,10 @@ export const teamService = {
   },
 
   deleteTeam: async (team_id: string) => {
-    const { error } = await supabase.from('team').delete().eq('team_id', team_id);
+    const { error } = await supabase
+    .from('team')
+    .delete()
+    .eq('team_id', team_id);
     if (error) throw error;
     return;
   },
