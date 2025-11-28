@@ -29,11 +29,11 @@ export const supporterController = {
 
   createSupporter: async (req: Request, res: Response) => {
     try {
-      const { team_id, supporter_name } = req.body;
-      if (team_id === undefined || supporter_name === undefined) {
-        return res.status(400).json({ message: 'Team ID and supporter name are required' });
+      const { supporter_id, team_id, supporter_name } = req.body;
+      if (supporter_name === undefined || !supporter_id) {
+        return res.status(400).json({ message: 'Supporter ID and name are required' });
       }
-      const data = await supporterService.createSupporter(team_id, supporter_name);
+      const data = await supporterService.createSupporter(supporter_id, team_id || null, supporter_name);
       res.status(201).json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

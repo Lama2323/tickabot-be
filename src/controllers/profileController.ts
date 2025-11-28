@@ -29,11 +29,11 @@ export const profileController = {
 
   createProfile: async (req: Request, res: Response) => {
     try {
-      const { profile_type, profile_name } = req.body;
-      if (profile_type === undefined || profile_name === undefined) {
-        return res.status(400).json({ message: 'Profile type and profile name are required' });
+      const { profile_id, profile_type, profile_name } = req.body;
+      if (profile_type === undefined || profile_name === undefined || !profile_id) {
+        return res.status(400).json({ message: 'Profile ID, type and name are required' });
       }
-      const data = await profileService.createProfile(profile_type, profile_name);
+      const data = await profileService.createProfile(profile_id, profile_type, profile_name);
       res.status(201).json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });

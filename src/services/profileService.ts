@@ -3,8 +3,8 @@ import { supabase } from '../utils/supabase';
 export const profileService = {
   getAllProfiles: async () => {
     const { data, error } = await supabase
-    .from('profile')
-    .select('*');
+      .from('profile')
+      .select('*');
     if (error) throw error;
     return data;
   },
@@ -19,10 +19,14 @@ export const profileService = {
     return data;
   },
 
-  createProfile: async (profile_type: string, profile_name: string) => {
+  createProfile: async (profile_id: string, profile_type: string, profile_name: string) => {
     const { data, error } = await supabase
       .from('profile')
-      .insert([{ type: profile_type, name: profile_name }])
+      .insert([{
+        profile_id,
+        profile_type,
+        profile_name
+      }])
       .select();
     if (error) throw error;
     return data;
@@ -31,7 +35,10 @@ export const profileService = {
   updateProfile: async (profile_id: string, profile_type: string, profile_name: string) => {
     const { data, error } = await supabase
       .from('profile')
-      .update({ type: profile_type, name: profile_name })
+      .update({
+        profile_type,
+        profile_name
+      })
       .eq('profile_id', profile_id)
       .select();
     if (error) throw error;
@@ -40,9 +47,9 @@ export const profileService = {
 
   deleteProfile: async (profile_id: string) => {
     const { error } = await supabase
-    .from('profile')
-    .delete()
-    .eq('profile_id', profile_id);
+      .from('profile')
+      .delete()
+      .eq('profile_id', profile_id);
     if (error) throw error;
     return;
   },

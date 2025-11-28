@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { User, UserRole } from '../models/User';
 import { AppError } from '../utils/errorHandler';
+import { profileService } from './profileService';
+import { supporterService } from './supporterService';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
@@ -33,6 +35,20 @@ export class AuthService {
       throw new AppError(error.message, 400);
     }
 
+    if (data.user) {
+      try {
+        await profileService.createProfile(data.user.id, userData.role, userData.name);
+
+        if (userData.role === UserRole.SUPPORT_AGENT) {
+          await supporterService.createSupporter(data.user.id, null, userData.name);
+        }
+      } catch (profileError: any) {
+        // If profile creation fails, we might want to rollback user creation or just log it.
+        // For now, let's throw an error so the user knows something went wrong.
+        throw new AppError('Failed to create user profile: ' + profileError.message, 500);
+      }
+    }
+
     return data;
   }
 
@@ -63,17 +79,12 @@ export class AuthService {
 
   // Middleware to check user role
   async checkUserRole(userId: string, requiredRole: UserRole): Promise<boolean> {
-    const { data: user, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', userId)
-      .single();
-
-    if (error || !user) {
+    try {
+      const profile = await profileService.getProfileById(userId);
+      return profile?.profile_type === requiredRole;
+    } catch (error) {
       return false;
     }
-
-    return user.role === requiredRole;
   }
 
   // Middleware to protect routes based on role
@@ -81,19 +92,19 @@ export class AuthService {
     return async (req: any, res: any, next: any) => {
       try {
         const token = req.headers.authorization?.split(' ')[1];
-        
+
         if (!token) {
           throw new AppError('No token provided', 401);
         }
 
         const { data: { user }, error } = await supabase.auth.getUser(token);
-        
+
         if (error || !user) {
           throw new AppError('Invalid or expired token', 401);
         }
 
         const hasRole = await this.checkUserRole(user.id, requiredRole);
-        
+
         if (!hasRole) {
           throw new AppError('Insufficient permissions', 403);
         }
