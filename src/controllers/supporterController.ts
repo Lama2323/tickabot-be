@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { supporterService } from '../services/supporterService';
+import { ticketService } from '../services/ticketService';
 
 export const supporterController = {
   getAllSupporters: async (req: Request, res: Response) => {
@@ -73,4 +74,33 @@ export const supporterController = {
     }
   },
 
+  getSupporterTicketByStatus: async (req: Request, res: Response) => {
+    try {
+      const { status, supporter_id } = req.query;
+
+      if (!status || !supporter_id) {
+        return res.status(400).json({
+          message: 'Status and supporter_id are required'
+        });
+      }
+
+      if (status !== 'pending' && status !== 'responded') {
+        return res.status(400).json({
+          message: 'Status must be either "pending" or "responded"'
+        });
+      }
+
+      const tickets = await ticketService.getTicketsByStatus(
+        status as 'pending' | 'responded',
+        supporter_id as string
+      );
+
+      res.status(200).json(tickets);
+    } catch (error: any) {
+      if (error.message === 'Supporter not found') {
+        return res.status(404).json({ message: 'Supporter not found' });
+      }
+      res.status(500).json({ error: error.message });
+    }
+  },
 };

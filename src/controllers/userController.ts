@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { userService } from '../services';
+import { ticketService } from '../services/ticketService';
 
 export const userController = {
   getAllUsers: async (req: Request, res: Response) => {
@@ -68,6 +69,33 @@ export const userController = {
       }
       await userService.deleteUser(user_id);
       res.status(204).send();
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  getUserTicketByStatus: async (req: Request, res: Response) => {
+    try {
+      const { status, user_id } = req.query;
+
+      if (!status || !user_id) {
+        return res.status(400).json({
+          message: 'Status and user_id are required'
+        });
+      }
+
+      if (status !== 'pending' && status !== 'responded') {
+        return res.status(400).json({
+          message: 'Status must be either "pending" or "responded"'
+        });
+      }
+
+      const tickets = await ticketService.getUserTicketsByStatus(
+        status as 'pending' | 'responded',
+        user_id as string
+      );
+
+      res.status(200).json(tickets);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

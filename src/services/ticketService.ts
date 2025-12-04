@@ -165,4 +165,21 @@ export const ticketService = {
     if (error) throw error;
     return data;
   },
+
+  getUserTicketsByStatus: async (status: 'pending' | 'responded', user_id: string) => {
+    let query = supabase
+      .from('ticket')
+      .select('*')
+      .eq('user_id', user_id);
+
+    if (status === 'pending') {
+      query = query.is('response_content', null);
+    } else {
+      query = query.not('response_content', 'is', null);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
 };
