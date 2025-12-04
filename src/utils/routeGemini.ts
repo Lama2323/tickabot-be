@@ -48,7 +48,9 @@ export async function sendToRouteGemini(ticket_content: string) {
   4. Đội ngũ xử lý (team_id):
      Dựa vào nội dung ticket và danh sách các team dưới đây, 
      hãy chọn team_id phù hợp nhất để xử lý ticket này, 
-     nếu ticket_difficulty là "easy", hãy chọn team_id là null.
+     nếu ticket_difficulty là "easy", hãy chọn team_id là null, 
+     vì easy có thể để LLM tự trả lời, 
+     không cần route đến bộ phận khác.
      Danh sách team:
      ${teamsJson}
 

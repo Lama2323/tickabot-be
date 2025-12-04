@@ -1,4 +1,4 @@
 export { ticketService } from './ticketService';
-export { profileService } from './profileService';
+export { userService } from './userService';
 export { teamService } from './teamService';
 export { supporterService } from './supporterService';

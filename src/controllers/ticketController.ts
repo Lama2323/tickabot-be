@@ -35,7 +35,8 @@ export const ticketController = {
         ticket_tone = null,
         ticket_difficulty = null,
         response_content = null,
-        team_id
+        team_id,
+        user_id
       } = req.body;
 
       const data = await ticketService.createTicket(
@@ -44,7 +45,8 @@ export const ticketController = {
         ticket_tone,
         ticket_difficulty,
         response_content,
-        team_id
+        team_id,
+        user_id
       );
       res.status(201).json(data);
     } catch (error: any) {
@@ -61,7 +63,8 @@ export const ticketController = {
         ticket_tone = null,
         ticket_difficulty = null,
         response_content = null,
-        team_id
+        team_id,
+        user_id
       } = req.body;
 
       if (!ticket_id) {
@@ -76,7 +79,8 @@ export const ticketController = {
         ticket_tone,
         ticket_difficulty,
         response_content,
-        team_id
+        team_id,
+        user_id
       );
       if (!data || data.length === 0) {
         return res.status(404).json({ message: 'Ticket not found' });

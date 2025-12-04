@@ -28,7 +28,8 @@ export const ticketService = {
     ticket_tone: string | null,
     ticket_difficulty: string | null,
     response_content: string | null = null,
-    team_id?: string
+    team_id?: string,
+    user_id?: string
   ) => {
     let { data, error } = await supabase
       .from('ticket')
@@ -38,7 +39,8 @@ export const ticketService = {
         ticket_tone,
         ticket_difficulty,
         response_content,
-        team_id
+        team_id,
+        user_id
       }])
       .select();
     if (error) throw error;
@@ -106,7 +108,8 @@ export const ticketService = {
     ticket_tone: string | null,
     ticket_difficulty: string | null,
     response_content: string | null = null,
-    team_id?: string
+    team_id?: string,
+    user_id?: string
   ) => {
     const { data, error } = await supabase
       .from('ticket')
@@ -116,7 +119,8 @@ export const ticketService = {
         ticket_tone,
         ticket_difficulty,
         response_content,
-        team_id
+        team_id,
+        user_id
       })
       .eq('ticket_id', ticket_id)
       .select();

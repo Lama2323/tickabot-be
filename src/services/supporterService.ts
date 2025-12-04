@@ -19,23 +19,24 @@ export const supporterService = {
     return data;
   },
 
-  createSupporter: async (supporter_id: string, team_id: string | null, supporter_name: string) => {
+  createSupporter: async (supporter_id: string, team_id: string | null, supporter_name: string, user_id?: string) => {
     const { data, error } = await supabase
       .from('supporter')
       .insert([{
         supporter_id,
         team_id,
-        supporter_name
+        supporter_name,
+        user_id
       }])
       .select();
     if (error) throw error;
     return data;
   },
 
-  updateSupporter: async (supporter_id: string, team_id: string, supporter_name: string) => {
+  updateSupporter: async (supporter_id: string, team_id: string, supporter_name: string, user_id?: string) => {
     const { data, error } = await supabase
       .from('supporter')
-      .update({ team_id, supporter_name })
+      .update({ team_id, supporter_name, user_id })
       .eq('supporter_id', supporter_id)
       .select();
     if (error) throw error;

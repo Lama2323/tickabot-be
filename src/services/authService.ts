@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { User, UserRole } from '../models/User';
 import { AppError } from '../utils/errorHandler';
-import { profileService } from './profileService';
+import { userService } from './userService';
 import { supporterService } from './supporterService';
 
 const supabaseUrl = process.env.SUPABASE_URL || '';
@@ -37,15 +37,16 @@ export class AuthService {
 
     if (data.user) {
       try {
-        await profileService.createProfile(data.user.id, userData.role, userData.name);
+        await userService.createUser(data.user.id, userData.role, userData.name);
 
         if (userData.role === UserRole.SUPPORT_AGENT) {
-          await supporterService.createSupporter(data.user.id, null, userData.name);
+          // Pass user_id to createSupporter
+          await supporterService.createSupporter(data.user.id, null, userData.name, data.user.id);
         }
-      } catch (profileError: any) {
-        // If profile creation fails, we might want to rollback user creation or just log it.
+      } catch (userError: any) {
+        // If user creation fails, we might want to rollback user creation or just log it.
         // For now, let's throw an error so the user knows something went wrong.
-        throw new AppError('Failed to create user profile: ' + profileError.message, 500);
+        throw new AppError('Failed to create user profile: ' + userError.message, 500);
       }
     }
 
@@ -80,8 +81,8 @@ export class AuthService {
   // Middleware to check user role
   async checkUserRole(userId: string, requiredRole: UserRole): Promise<boolean> {
     try {
-      const profile = await profileService.getProfileById(userId);
-      return profile?.profile_type === requiredRole;
+      const user = await userService.getUserById(userId);
+      return user?.user_type === requiredRole;
     } catch (error) {
       return false;
     }

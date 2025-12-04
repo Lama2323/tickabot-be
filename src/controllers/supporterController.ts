@@ -29,11 +29,11 @@ export const supporterController = {
 
   createSupporter: async (req: Request, res: Response) => {
     try {
-      const { supporter_id, team_id, supporter_name } = req.body;
+      const { supporter_id, team_id, supporter_name, user_id } = req.body;
       if (supporter_name === undefined || !supporter_id) {
         return res.status(400).json({ message: 'Supporter ID and name are required' });
       }
-      const data = await supporterService.createSupporter(supporter_id, team_id || null, supporter_name);
+      const data = await supporterService.createSupporter(supporter_id, team_id || null, supporter_name, user_id);
       res.status(201).json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -43,14 +43,14 @@ export const supporterController = {
   updateSupporter: async (req: Request, res: Response) => {
     try {
       const { supporter_id } = req.params;
-      const { team_id, supporter_name } = req.body;
+      const { team_id, supporter_name, user_id } = req.body;
       if (!supporter_id) {
         return res.status(400).json({ message: 'Supporter ID is required' });
       }
       if (team_id === undefined || supporter_name === undefined) {
         return res.status(400).json({ message: 'Team ID and supporter name are required' });
       }
-      const data = await supporterService.updateSupporter(supporter_id, team_id, supporter_name);
+      const data = await supporterService.updateSupporter(supporter_id, team_id, supporter_name, user_id);
       if (!data || data.length === 0) {
         return res.status(404).json({ message: 'Supporter not found' });
       }
