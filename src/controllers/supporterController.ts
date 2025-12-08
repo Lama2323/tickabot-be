@@ -76,7 +76,7 @@ export const supporterController = {
 
   getSupporterTicketByStatus: async (req: Request, res: Response) => {
     try {
-      const { status, supporter_id } = req.query;
+      const { status, supporter_id, sortPriority, sortDate, priorityType } = req.query;
 
       if (!status || !supporter_id) {
         return res.status(400).json({
@@ -92,7 +92,10 @@ export const supporterController = {
 
       const tickets = await ticketService.getTicketsByStatus(
         status as 'pending' | 'responded',
-        supporter_id as string
+        supporter_id as string,
+        sortPriority as 'asc' | 'desc' | undefined,
+        sortDate as 'asc' | 'desc' | undefined,
+        priorityType as string | undefined
       );
 
       res.status(200).json(tickets);

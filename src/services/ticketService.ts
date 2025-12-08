@@ -137,7 +137,13 @@ export const ticketService = {
     return;
   },
 
-  getTicketsByStatus: async (status: 'pending' | 'responded', supporter_id: string) => {
+  getTicketsByStatus: async (
+    status: 'pending' | 'responded',
+    supporter_id: string,
+    sortPriority?: 'asc' | 'desc',
+    sortDate?: 'asc' | 'desc',
+    priorityType?: string
+  ) => {
     // First get the supporter to get their team_id
     const { data: supporter, error: supporterError } = await supabase
       .from('supporter')
@@ -161,12 +167,44 @@ export const ticketService = {
       query = query.not('response_content', 'is', null);
     }
 
-    const { data, error } = await query;
+    if (priorityType) {
+      query = query.eq('ticket_priority', priorityType);
+    }
+
+    if (sortDate) {
+      query = query.order('created_at', { ascending: sortDate === 'asc' });
+    }
+
+    let { data, error } = await query;
     if (error) throw error;
+
+    if (sortPriority && data) {
+      const getPriorityWeight = (priority: string | null) => {
+        switch (priority?.toLowerCase()) {
+          case 'high': return 3;
+          case 'medium': return 2;
+          case 'low': return 1;
+          default: return 0;
+        }
+      };
+
+      data.sort((a, b) => {
+        const weightA = getPriorityWeight(a.ticket_priority);
+        const weightB = getPriorityWeight(b.ticket_priority);
+        return sortPriority === 'asc' ? weightA - weightB : weightB - weightA;
+      });
+    }
+
     return data;
   },
 
-  getUserTicketsByStatus: async (status: 'pending' | 'responded', user_id: string) => {
+  getUserTicketsByStatus: async (
+    status: 'pending' | 'responded',
+    user_id: string,
+    sortPriority?: 'asc' | 'desc',
+    sortDate?: 'asc' | 'desc',
+    priorityType?: string
+  ) => {
     let query = supabase
       .from('ticket')
       .select('*')
@@ -178,8 +216,34 @@ export const ticketService = {
       query = query.not('response_content', 'is', null);
     }
 
-    const { data, error } = await query;
+    if (priorityType) {
+      query = query.eq('ticket_priority', priorityType);
+    }
+
+    if (sortDate) {
+      query = query.order('created_at', { ascending: sortDate === 'asc' });
+    }
+
+    let { data, error } = await query;
     if (error) throw error;
+
+    if (sortPriority && data) {
+      const getPriorityWeight = (priority: string | null) => {
+        switch (priority?.toLowerCase()) {
+          case 'high': return 3;
+          case 'medium': return 2;
+          case 'low': return 1;
+          default: return 0;
+        }
+      };
+
+      data.sort((a, b) => {
+        const weightA = getPriorityWeight(a.ticket_priority);
+        const weightB = getPriorityWeight(b.ticket_priority);
+        return sortPriority === 'asc' ? weightA - weightB : weightB - weightA;
+      });
+    }
+
     return data;
   },
 };
