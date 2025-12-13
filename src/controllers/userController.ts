@@ -85,14 +85,11 @@ export const userController = {
         });
       }
 
-      if (status !== 'pending' && status !== 'responded') {
-        return res.status(400).json({
-          message: 'Status must be either "pending" or "responded"'
-        });
-      }
+      // Allow any status or comma-separated list
+      // if (status !== 'pending' && status !== 'responded') { ... } // Removed
 
       const tickets = await ticketService.getUserTicketsByStatus(
-        status as 'pending' | 'responded',
+        status as string,
         user_id as string,
         sortPriority as 'asc' | 'desc' | undefined,
         sortDate as 'asc' | 'desc' | undefined,

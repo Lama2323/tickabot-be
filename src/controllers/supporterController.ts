@@ -86,12 +86,6 @@ export const supporterController = {
         });
       }
 
-      if (status !== 'pending' && status !== 'responded') {
-        return res.status(400).json({
-          message: 'Status must be either "pending" or "responded"'
-        });
-      }
-
       // Fetch supporter_id from user_id
       const { data: supporter, error: supporterError } = await supabase
         .from('supporter')
@@ -104,7 +98,7 @@ export const supporterController = {
       }
 
       const tickets = await ticketService.getTicketsByStatus(
-        status as 'pending' | 'responded',
+        status as string,
         supporter.supporter_id,
         sortPriority as 'asc' | 'desc' | undefined,
         sortDate as 'asc' | 'desc' | undefined,

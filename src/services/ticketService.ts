@@ -289,7 +289,7 @@ export const ticketService = {
   },
 
   getTicketsByStatus: async (
-    status: 'pending' | 'responded',
+    status: string, // Changed from union type to generic string for comma-separated values
     supporter_id: string,
     sortPriority?: 'asc' | 'desc',
     sortDate?: 'asc' | 'desc',
@@ -312,16 +312,10 @@ export const ticketService = {
       .select('*')
       .eq('team_id', supporter.team_id);
 
-    // Map 'pending'/'responded' alias from FE to actual DB statuses
-    if (status === 'pending') {
-      // Pending for supporter means: 'open' or 'pending_supporter'
-      query = query.in('status', ['open', 'pending_supporter']);
-    } else {
-      // Responded/Resolved means: 'resolved' or 'pending_user' (waiting for user)
-      // Or maybe strictly 'resolved'? User's request implied separating:
-      // "Support handles hard tickets", "User chats back and forth".
-      // A ticket awaiting user reply is technically 'handled' for now by supporter.
-      query = query.in('status', ['resolved', 'pending_user']);
+    // Support comma-separated statuses e.g. "open,pending_supporter"
+    if (status) {
+      const statuses = status.split(',').map(s => s.trim());
+      query = query.in('status', statuses);
     }
 
     if (priorityType) {
@@ -356,7 +350,7 @@ export const ticketService = {
   },
 
   getUserTicketsByStatus: async (
-    status: 'pending' | 'responded',
+    status: string, // Changed from union type to generic string for comma-separated values
     user_id: string,
     sortPriority?: 'asc' | 'desc',
     sortDate?: 'asc' | 'desc',
@@ -367,12 +361,10 @@ export const ticketService = {
       .select('*')
       .eq('user_id', user_id);
 
-    if (status === 'pending') {
-      // Pending for User means: 'open' (waiting for support pick up) or 'pending_supporter' (waiting for support reply)
-      query = query.in('status', ['open', 'pending_supporter']);
-    } else {
-      // Responded for User means: 'resolved' or 'pending_user' (support replied, waiting for user)
-      query = query.in('status', ['resolved', 'pending_user']);
+    // Support comma-separated statuses e.g. "pending_supporter,resolved"
+    if (status) {
+      const statuses = status.split(',').map(s => s.trim());
+      query = query.in('status', statuses);
     }
 
     if (priorityType) {
