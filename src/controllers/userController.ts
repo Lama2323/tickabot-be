@@ -76,11 +76,12 @@ export const userController = {
 
   getUserTicketByStatus: async (req: Request, res: Response) => {
     try {
-      const { status, user_id, sortPriority, sortDate, priorityType } = req.query;
+      const { status, sortPriority, sortDate, priorityType } = req.query;
+      const user_id = req.user.id;
 
-      if (!status || !user_id) {
+      if (!status) {
         return res.status(400).json({
-          message: 'Status and user_id are required'
+          message: 'Status is required'
         });
       }
 

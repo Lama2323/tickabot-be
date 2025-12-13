@@ -1,7 +1,11 @@
 import { Router } from 'express';
 import { ticketController } from '../controllers';
+import { verifyToken } from '../middlewares/authMiddleware';
 
 const ticketRouter = Router();
+
+// Apply verifyToken to all routes
+ticketRouter.use(verifyToken);
 
 ticketRouter.get('/', ticketController.getAllTickets);
 ticketRouter.get('/:ticket_id', ticketController.getTicketById);

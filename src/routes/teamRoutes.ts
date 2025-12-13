@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { teamController } from '../controllers';
+import { verifyToken } from '../middlewares/authMiddleware';
 
 const teamRouter = Router();
+
+teamRouter.use(verifyToken);
 
 teamRouter.get('/', teamController.getAllTeams);
 teamRouter.get('/:team_id', teamController.getTeamById);

@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { userController } from '../controllers';
+import { verifyToken } from '../middlewares/authMiddleware';
 
 const userRouter = Router();
+
+userRouter.use(verifyToken);
 
 userRouter.get('/', userController.getAllUsers);
 userRouter.get('/tickets', userController.getUserTicketByStatus);

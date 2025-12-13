@@ -169,6 +169,23 @@ export const ticketService = {
             .select();
 
           if (updatedData) data = updatedData;
+
+          // Added: Send detailed acknowledgement message
+          let teamName = 'Support';
+          if (routeData.team_id) {
+            const { data: teamData } = await supabase
+              .from('team')
+              .select('team_name')
+              .eq('team_id', routeData.team_id)
+              .single();
+            if (teamData) teamName = teamData.team_name;
+          }
+
+          await supabase.from('ticket_messages').insert([{
+            ticket_id: ticketId,
+            sender_type: 'bot',
+            content: `Chào bạn, vấn đề của bạn đã được phân loại và chuyển đến team ${teamName}. Vui lòng chờ Supporter phản hồi.`
+          }]);
         }
       } catch (err) {
         console.error("Error processing ticket with Gemini:", err);

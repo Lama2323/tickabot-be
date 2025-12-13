@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { supporterService } from '../services/supporterService';
 import { ticketService } from '../services/ticketService';
+import { supabase } from '../utils/supabase';
 
 export const supporterController = {
   getAllSupporters: async (req: Request, res: Response) => {
@@ -76,11 +77,12 @@ export const supporterController = {
 
   getSupporterTicketByStatus: async (req: Request, res: Response) => {
     try {
-      const { status, supporter_id, sortPriority, sortDate, priorityType } = req.query;
+      const { status, sortPriority, sortDate, priorityType } = req.query;
+      const userId = req.user.id; // From authMiddleware
 
-      if (!status || !supporter_id) {
+      if (!status) {
         return res.status(400).json({
-          message: 'Status and supporter_id are required'
+          message: 'Status is required'
         });
       }
 
@@ -90,9 +92,20 @@ export const supporterController = {
         });
       }
 
+      // Fetch supporter_id from user_id
+      const { data: supporter, error: supporterError } = await supabase
+        .from('supporter')
+        .select('supporter_id')
+        .eq('user_id', userId)
+        .single();
+
+      if (supporterError || !supporter) {
+        return res.status(403).json({ message: 'Supporter profile not found for this user' });
+      }
+
       const tickets = await ticketService.getTicketsByStatus(
         status as 'pending' | 'responded',
-        supporter_id as string,
+        supporter.supporter_id,
         sortPriority as 'asc' | 'desc' | undefined,
         sortDate as 'asc' | 'desc' | undefined,
         priorityType as string | undefined
