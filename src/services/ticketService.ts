@@ -13,13 +13,25 @@ export const ticketService = {
   },
 
   getTicketById: async (ticket_id: string) => {
-    const { data, error } = await supabase
+    // Get ticket details
+    const { data: ticket, error: ticketError } = await supabase
       .from('ticket')
       .select('*')
       .eq('ticket_id', ticket_id)
       .single();
-    if (error) throw error;
-    return data;
+
+    if (ticketError) throw ticketError;
+
+    // Get messages
+    const { data: messages, error: messagesError } = await supabase
+      .from('ticket_messages')
+      .select('*')
+      .eq('ticket_id', ticket_id)
+      .order('created_at', { ascending: true });
+
+    if (messagesError) throw messagesError;
+
+    return { ...ticket, messages: messages || [] };
   },
 
   createTicket: async (
@@ -27,10 +39,11 @@ export const ticketService = {
     ticket_content: string | null,
     ticket_tone: string | null,
     ticket_difficulty: string | null,
-    response_content: string | null = null,
+
     team_id?: string,
     user_id?: string
   ) => {
+    // 1. Create Ticket
     let { data, error } = await supabase
       .from('ticket')
       .insert([{
@@ -38,20 +51,34 @@ export const ticketService = {
         ticket_content,
         ticket_tone,
         ticket_difficulty,
-        response_content,
+
         team_id,
-        user_id
+        user_id,
+        status: 'open'
       }])
       .select();
     if (error) throw error;
+    if (!data || data.length === 0) throw new Error('Ticket creation failed');
 
-    // Gửi nội dung ticket đến Gemini và ghi phản hồi
+    const ticketId = data[0].ticket_id;
+
+    // 2. Insert User Message
+    if (ticket_content) {
+      await supabase.from('ticket_messages').insert([{
+        ticket_id: ticketId,
+        sender_type: 'user',
+        content: ticket_content
+      }]);
+    }
+
+    // 3. Process with Gemini
     if (ticket_content && data && data.length > 0) {
       try {
         const routeResult = await sendToRouteGemini(ticket_content);
         const routeData = JSON.parse(routeResult);
 
         if (routeData.ticket_difficulty === 'easy') {
+          // Case 1: Easy - AI Auto Reply
           const context = {
             ticket_priority: routeData.ticket_priority,
             ticket_tone: routeData.ticket_tone,
@@ -61,6 +88,7 @@ export const ticketService = {
 
           const geminiResponse = await sendToResponseGemini(ticket_content, context);
 
+          // Update Ticket
           const { data: updatedData } = await supabase
             .from('ticket')
             .update({
@@ -68,16 +96,22 @@ export const ticketService = {
               ticket_tone: routeData.ticket_tone,
               ticket_difficulty: routeData.ticket_difficulty,
               team_id: routeData.team_id,
-              response_content: geminiResponse
+              status: 'resolved'
             })
-            .eq('ticket_id', data[0].ticket_id)
+            .eq('ticket_id', ticketId)
             .select();
 
-          if (updatedData) {
-            data = updatedData;
-          }
+          if (updatedData) data = updatedData;
+
+          // Insert Bot Message
+          await supabase.from('ticket_messages').insert([{
+            ticket_id: ticketId,
+            sender_type: 'bot',
+            content: geminiResponse
+          }]);
 
         } else {
+          // Case 2: Not Easy - Update metadata only
           const { data: updatedData } = await supabase
             .from('ticket')
             .update({
@@ -85,13 +119,12 @@ export const ticketService = {
               ticket_tone: routeData.ticket_tone,
               ticket_difficulty: routeData.ticket_difficulty,
               team_id: routeData.team_id
+              // status remains 'open'
             })
-            .eq('ticket_id', data[0].ticket_id)
+            .eq('ticket_id', ticketId)
             .select();
 
-          if (updatedData) {
-            data = updatedData;
-          }
+          if (updatedData) data = updatedData;
         }
       } catch (err) {
         console.error("Error processing ticket with Gemini:", err);
@@ -107,9 +140,10 @@ export const ticketService = {
     ticket_content: string | null,
     ticket_tone: string | null,
     ticket_difficulty: string | null,
-    response_content: string | null = null,
+
     team_id?: string,
-    user_id?: string
+    user_id?: string,
+    status?: string // Add status parameter
   ) => {
     const { data, error } = await supabase
       .from('ticket')
@@ -118,9 +152,10 @@ export const ticketService = {
         ticket_content,
         ticket_tone,
         ticket_difficulty,
-        response_content,
+
         team_id,
-        user_id
+        user_id,
+        status // Update status if provided
       })
       .eq('ticket_id', ticket_id)
       .select();
@@ -135,6 +170,35 @@ export const ticketService = {
       .eq('ticket_id', ticket_id);
     if (error) throw error;
     return;
+  },
+
+  replyTicket: async (ticket_id: string, sender_type: 'user' | 'supporter', content: string) => {
+    // 1. Insert message
+    const { data: message, error: messageError } = await supabase
+      .from('ticket_messages')
+      .insert([{
+        ticket_id,
+        sender_type,
+        content
+      }])
+      .select()
+      .single();
+
+    if (messageError) throw messageError;
+
+    // 2. Update ticket status
+    // If supporter replies -> pending_user
+    // If user replies -> pending_supporter
+    const newStatus = sender_type === 'supporter' ? 'pending_user' : 'pending_supporter';
+
+    const { error: updateError } = await supabase
+      .from('ticket')
+      .update({ status: newStatus })
+      .eq('ticket_id', ticket_id);
+
+    if (updateError) throw updateError;
+
+    return message;
   },
 
   getTicketsByStatus: async (
@@ -161,10 +225,16 @@ export const ticketService = {
       .select('*')
       .eq('team_id', supporter.team_id);
 
+    // Map 'pending'/'responded' alias from FE to actual DB statuses
     if (status === 'pending') {
-      query = query.is('response_content', null);
+      // Pending for supporter means: 'open' or 'pending_supporter'
+      query = query.in('status', ['open', 'pending_supporter']);
     } else {
-      query = query.not('response_content', 'is', null);
+      // Responded/Resolved means: 'resolved' or 'pending_user' (waiting for user)
+      // Or maybe strictly 'resolved'? User's request implied separating:
+      // "Support handles hard tickets", "User chats back and forth".
+      // A ticket awaiting user reply is technically 'handled' for now by supporter.
+      query = query.in('status', ['resolved', 'pending_user']);
     }
 
     if (priorityType) {
@@ -211,9 +281,11 @@ export const ticketService = {
       .eq('user_id', user_id);
 
     if (status === 'pending') {
-      query = query.is('response_content', null);
+      // Pending for User means: 'open' (waiting for support pick up) or 'pending_supporter' (waiting for support reply)
+      query = query.in('status', ['open', 'pending_supporter']);
     } else {
-      query = query.not('response_content', 'is', null);
+      // Responded for User means: 'resolved' or 'pending_user' (support replied, waiting for user)
+      query = query.in('status', ['resolved', 'pending_user']);
     }
 
     if (priorityType) {

@@ -8,9 +8,11 @@
 | ticket_content      | text                       | YES      | null                |
 | ticket_difficulty   | text                       | YES      | null                |
 | ticket_tone         | text                       | YES      | null                |
-| response_content    | text                       | YES      | null                |
+| ticket_tone         | text                       | YES      | null                |
+| team_id             | uuid                       | YES      | null                |
 | team_id             | uuid                       | YES      | null                |
 | user_id             | uuid                       | YES      | auth.uid()          |
+| status              | text                       | YES      | 'open'              |
 
 ### Bảng `user`
 
@@ -39,3 +41,13 @@
 | created_at          | timestamp with time zone   | NO       | now()               |
 | team_name           | text                       | YES      | null                |
 | team_description    | text                       | YES      | null                |
+
+### Bảng `ticket_messages`
+
+| Column Name         | Data Type                  | Nullable | Default Value       |
+|---------------------|----------------------------|----------|---------------------|
+| message_id          | uuid                       | NO       | gen_random_uuid()   |
+| ticket_id           | uuid                       | NO       | null                |
+| sender_type         | text                       | NO       | null                |
+| content             | text                       | YES      | null                |
+| created_at          | timestamp with time zone   | NO       | now()               |

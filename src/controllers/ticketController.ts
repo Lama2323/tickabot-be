@@ -34,7 +34,6 @@ export const ticketController = {
         ticket_content = null,
         ticket_tone = null,
         ticket_difficulty = null,
-        response_content = null,
         team_id,
         user_id
       } = req.body;
@@ -44,7 +43,6 @@ export const ticketController = {
         ticket_content,
         ticket_tone,
         ticket_difficulty,
-        response_content,
         team_id,
         user_id
       );
@@ -62,9 +60,9 @@ export const ticketController = {
         ticket_content = null,
         ticket_tone = null,
         ticket_difficulty = null,
-        response_content = null,
         team_id,
-        user_id
+        user_id,
+        status // Extract status
       } = req.body;
 
       if (!ticket_id) {
@@ -78,14 +76,36 @@ export const ticketController = {
         ticket_content,
         ticket_tone,
         ticket_difficulty,
-        response_content,
         team_id,
-        user_id
+        user_id,
+        status // Pass status
       );
       if (!data || data.length === 0) {
         return res.status(404).json({ message: 'Ticket not found' });
       }
       res.status(200).json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  replyTicket: async (req: Request, res: Response) => {
+    try {
+      const { ticket_id } = req.params;
+      const { sender_type, content } = req.body;
+
+      if (!ticket_id) {
+        return res.status(400).json({ message: 'Ticket ID is required' });
+      }
+      if (!content || !sender_type) {
+        return res.status(400).json({ message: 'Content and sender_type are required' });
+      }
+      if (sender_type !== 'user' && sender_type !== 'supporter') {
+        return res.status(400).json({ message: 'Invalid sender_type. Must be "user" or "supporter".' });
+      }
+
+      const data = await ticketService.replyTicket(ticket_id, sender_type, content);
+      res.status(201).json(data);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
