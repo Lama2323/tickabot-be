@@ -1,6 +1,33 @@
 import { supabase } from '../utils/supabase';
 import { sendToRouteGemini } from '../utils/routeGemini';
 import { sendToResponseGemini } from '../utils/responseGemini';
+import { sendToSummaryGemini } from '../utils/summaryGemini';
+import { sendToMatchGemini } from '../utils/matchGemini';
+import { solutionService } from './solutionService';
+
+
+// Standalone function to avoid circular dependency when calling from within ticketService methods
+const getTicketByIdFunc = async (ticket_id: string) => {
+  // Get ticket details
+  const { data: ticket, error: ticketError } = await supabase
+    .from('ticket')
+    .select('*')
+    .eq('ticket_id', ticket_id)
+    .single();
+
+  if (ticketError) throw ticketError;
+
+  // Get messages
+  const { data: messages, error: messagesError } = await supabase
+    .from('ticket_messages')
+    .select('*')
+    .eq('ticket_id', ticket_id)
+    .order('created_at', { ascending: true });
+
+  if (messagesError) throw messagesError;
+
+  return { ...ticket, messages: messages || [] };
+};
 
 
 export const ticketService = {
@@ -12,27 +39,7 @@ export const ticketService = {
     return data;
   },
 
-  getTicketById: async (ticket_id: string) => {
-    // Get ticket details
-    const { data: ticket, error: ticketError } = await supabase
-      .from('ticket')
-      .select('*')
-      .eq('ticket_id', ticket_id)
-      .single();
-
-    if (ticketError) throw ticketError;
-
-    // Get messages
-    const { data: messages, error: messagesError } = await supabase
-      .from('ticket_messages')
-      .select('*')
-      .eq('ticket_id', ticket_id)
-      .order('created_at', { ascending: true });
-
-    if (messagesError) throw messagesError;
-
-    return { ...ticket, messages: messages || [] };
-  },
+  getTicketById: getTicketByIdFunc,
 
   createTicket: async (
     ticket_priority: string | null,
@@ -77,7 +84,44 @@ export const ticketService = {
         const routeResult = await sendToRouteGemini(ticket_content);
         const routeData = JSON.parse(routeResult);
 
-        if (routeData.ticket_difficulty === 'easy') {
+        // Check for matching solution in Knowledge Base first
+        let matchFound = false;
+        if (routeData.team_id) {
+          const solutions = await solutionService.getSolutionsByTeam(routeData.team_id);
+          const matchResultRaw = await sendToMatchGemini(ticket_content, solutions);
+          const matchResult = JSON.parse(matchResultRaw);
+
+          if (matchResult.foundMatch && matchResult.solution && matchResult.confidence > 0.8) {
+            matchFound = true;
+
+            // Update Ticket to Resolved
+            const { data: updatedData } = await supabase
+              .from('ticket')
+              .update({
+                ticket_priority: routeData.ticket_priority,
+                ticket_tone: routeData.ticket_tone,
+                ticket_difficulty: 'easy', // Treated as easy if auto-solved
+                team_id: routeData.team_id,
+                status: 'resolved'
+              })
+              .eq('ticket_id', ticketId)
+              .select();
+
+            if (updatedData) data = updatedData;
+
+            // Insert Bot Message (Solution)
+            await supabase.from('ticket_messages').insert([{
+              ticket_id: ticketId,
+              sender_type: 'bot',
+              content: matchResult.solution
+            }]);
+          }
+        }
+
+        if (matchFound) {
+          // Case 0: Match Found (Already handled above)
+          // No further action needed as DB was updated in the match block
+        } else if (routeData.ticket_difficulty === 'easy') {
           // Case 1: Easy - AI Auto Reply
           const context = {
             ticket_priority: routeData.ticket_priority,
@@ -111,7 +155,7 @@ export const ticketService = {
           }]);
 
         } else {
-          // Case 2: Not Easy - Update metadata only
+          // Case 2: Not Easy AND No Match - Update metadata only
           const { data: updatedData } = await supabase
             .from('ticket')
             .update({
@@ -160,6 +204,32 @@ export const ticketService = {
       .eq('ticket_id', ticket_id)
       .select();
     if (error) throw error;
+
+    // Trigger Summarization if Status -> Resolved
+    if (status === 'resolved') {
+      try {
+        // Fetch full ticket details including messages
+        const fullTicket = await getTicketByIdFunc(ticket_id);
+
+        if (fullTicket.team_id && fullTicket.messages.length > 0) {
+          const summaryRaw = await sendToSummaryGemini(fullTicket.messages);
+          const summary = JSON.parse(summaryRaw);
+
+          if (summary.shouldRemember) {
+            await solutionService.createSolution(
+              fullTicket.team_id,
+              ticket_id,
+              summary.problem,
+              summary.solution
+            );
+          }
+        }
+      } catch (sumError) {
+        console.error("Error summarizing ticket:", sumError);
+        // Don't throw logic error here to block the update response
+      }
+    }
+
     return data;
   },
 

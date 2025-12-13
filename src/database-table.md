@@ -51,3 +51,14 @@
 | sender_type         | text                       | NO       | null                |
 | content             | text                       | YES      | null                |
 | created_at          | timestamp with time zone   | NO       | now()               |
+
+### Bảng `solution`
+
+| Column Name         | Data Type                  | Nullable | Default Value       |
+|---------------------|----------------------------|----------|---------------------|
+| solution_id         | uuid                       | NO       | gen_random_uuid()   |
+| team_id             | uuid                       | NO       | null                |
+| ticket_id           | uuid                       | YES      | null                |
+| problem             | text                       | NO       | null                |
+| solution            | text                       | NO       | null                |
+| created_at          | timestamp with time zone   | NO       | now()               |
