@@ -1,12 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
-import { User, UserRole } from '../models/User';
+import { supabase } from '../utils/supabase';
+import { UserRole } from '../models/User';
 import { AppError } from '../utils/errorHandler';
 import { userService } from './userService';
-import { supporterService } from './supporterService';
-
-const supabaseUrl = process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.SUPABASE_ANON_KEY || '';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 interface ILoginCredentials {
   email: string;
@@ -19,33 +14,33 @@ interface IAuthResponse {
 }
 
 export class AuthService {
-  async signUp(credentials: ILoginCredentials, userData: { name: string; role: UserRole }) {
+  async signUp(credentials: ILoginCredentials, userData: { name: string }) {
+    const role = UserRole.USER;
     const { data, error } = await supabase.auth.signUp({
       email: credentials.email,
       password: credentials.password,
       options: {
         data: {
           name: userData.name,
-          role: userData.role
+          role: role
         }
       }
     });
 
     if (error) {
+      console.error('Supabase Auth SignUp Error:', error);
       throw new AppError(error.message, 400);
     }
 
+    console.log('Supabase Auth SignUp Success:', data.user?.id);
+
     if (data.user) {
       try {
-        await userService.createUser(data.user.id, userData.role, userData.name);
-
-        if (userData.role === UserRole.SUPPORT_AGENT) {
-          // Pass user_id to createSupporter
-          await supporterService.createSupporter(data.user.id, null, userData.name, data.user.id);
-        }
+        console.log('Attempting to create user profile in DB for ID:', data.user.id);
+        const result = await userService.createUser(data.user.id, role, userData.name);
+        console.log('User profile created successfully:', result);
       } catch (userError: any) {
-        // If user creation fails, we might want to rollback user creation or just log it.
-        // For now, let's throw an error so the user knows something went wrong.
+        console.error('Database Profile Creation Error:', userError);
         throw new AppError('Failed to create user profile: ' + userError.message, 500);
       }
     }
@@ -53,22 +48,92 @@ export class AuthService {
     return data;
   }
 
-  async login(credentials: ILoginCredentials): Promise<IAuthResponse> {
+  async login(credentials: ILoginCredentials): Promise<any> {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: credentials.email,
       password: credentials.password,
     });
 
     if (error) {
-      throw new AppError('Invalid credentials', 401);
+      console.error('Supabase Login Error:', error.message);
+      throw new AppError(error.message, 401);
     }
 
-    return data;
+    try {
+      // Fetch profile to get role
+      const profile = await userService.getUserById(data.user.id);
+      let supporterProfile = null;
+      if (profile.user_type === UserRole.SUPPORT_AGENT) {
+        const { data: sData, error: sError } = await supabase
+          .from('supporter')
+          .select('*')
+          .eq('user_id', data.user.id)
+          .single();
+        if (sError) {
+          console.warn('Supporter profile not found for agent:', data.user.id);
+        }
+        supporterProfile = sData;
+      }
+
+      return {
+        ...data,
+        token: data.session?.access_token,
+        user: {
+          ...data.user,
+          role: profile.user_type,
+          name: profile.user_name,
+          profile,
+          supporter: supporterProfile,
+          supporter_id: supporterProfile?.supporter_id,
+          team_id: supporterProfile?.team_id
+        }
+      };
+    } catch (profileError: any) {
+      console.error('Error fetching user profile during login:', profileError);
+      // Even if profile fetching fails, we have the auth data, 
+      // but the app expects profile data, so we might want to throw or return partial data.
+      // For now, let's return what we have but with a warning.
+      return {
+        ...data,
+        token: data.session?.access_token,
+        user: {
+          ...data.user,
+          role: UserRole.USER, // Default to USER if profile not found
+          name: data.user.user_metadata?.name || 'User'
+        }
+      };
+    }
   }
 
   async getUser() {
     const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    if (!user) return null;
+
+    try {
+      const profile = await userService.getUserById(user.id);
+      let supporterProfile = null;
+      if (profile.user_type === UserRole.SUPPORT_AGENT) {
+        const { data: sData } = await supabase
+          .from('supporter')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+        supporterProfile = sData;
+      }
+
+      return {
+        ...user,
+        role: profile.user_type,
+        name: profile.user_name,
+        profile,
+        supporter: supporterProfile,
+        supporter_id: supporterProfile?.supporter_id,
+        team_id: supporterProfile?.team_id,
+        user_id: user.id
+      };
+    } catch (e) {
+      return user;
+    }
   }
 
   async signOut() {

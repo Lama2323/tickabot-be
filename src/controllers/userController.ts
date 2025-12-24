@@ -6,9 +6,9 @@ export const userController = {
   getAllUsers: async (req: Request, res: Response) => {
     try {
       const data = await userService.getAllUsers();
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -16,15 +16,15 @@ export const userController = {
     try {
       const { user_id } = req.params;
       if (!user_id) {
-        return res.status(400).json({ message: 'User ID is required' });
+        return res.status(400).json({ success: false, message: 'User ID is required' });
       }
       const data = await userService.getUserById(user_id);
       if (!data) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -32,12 +32,12 @@ export const userController = {
     try {
       const { user_id, user_type, user_name } = req.body;
       if (user_type === undefined || user_name === undefined || !user_id) {
-        return res.status(400).json({ message: 'User ID, type and name are required' });
+        return res.status(400).json({ success: false, message: 'User ID, type and name are required' });
       }
       const data = await userService.createUser(user_id, user_type, user_name);
-      res.status(201).json(data);
+      res.status(201).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -46,18 +46,18 @@ export const userController = {
       const { user_id } = req.params;
       const { user_type, user_name } = req.body;
       if (!user_id) {
-        return res.status(400).json({ message: 'User ID is required' });
+        return res.status(400).json({ success: false, message: 'User ID is required' });
       }
       if (user_type === undefined || user_name === undefined) {
-        return res.status(400).json({ message: 'User type and user name are required' });
+        return res.status(400).json({ success: false, message: 'User type and user name are required' });
       }
       const data = await userService.updateUser(user_id, user_type, user_name);
       if (!data || data.length === 0) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -65,28 +65,27 @@ export const userController = {
     try {
       const { user_id } = req.params;
       if (!user_id) {
-        return res.status(400).json({ message: 'User ID is required' });
+        return res.status(400).json({ success: false, message: 'User ID is required' });
       }
       await userService.deleteUser(user_id);
-      res.status(204).send();
+      res.status(200).json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
   getUserTicketByStatus: async (req: Request, res: Response) => {
     try {
       const { status, sortPriority, sortDate, priorityType } = req.query;
-      const user_id = req.user.id;
+      const { user_id: paramUserId } = req.params;
+      const user_id = paramUserId || req.user.id;
 
       if (!status) {
         return res.status(400).json({
+          success: false,
           message: 'Status is required'
         });
       }
-
-      // Allow any status or comma-separated list
-      // if (status !== 'pending' && status !== 'responded') { ... } // Removed
 
       const tickets = await ticketService.getUserTicketsByStatus(
         status as string,
@@ -96,9 +95,9 @@ export const userController = {
         priorityType as string | undefined
       );
 
-      res.status(200).json(tickets);
+      res.status(200).json({ success: true, data: tickets });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 };

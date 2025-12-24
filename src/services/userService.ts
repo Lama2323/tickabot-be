@@ -20,6 +20,7 @@ export const userService = {
   },
 
   createUser: async (user_id: string, user_type: string, user_name: string) => {
+    console.log('userService.createUser called with:', { user_id, user_type, user_name });
     const { data, error } = await supabase
       .from('user')
       .insert([{
@@ -28,7 +29,13 @@ export const userService = {
         user_name
       }])
       .select();
-    if (error) throw error;
+
+    if (error) {
+      console.error('Supabase DB Insert Error:', error);
+      throw error;
+    }
+
+    console.log('Supabase DB Insert Success:', data);
     return data;
   },
 

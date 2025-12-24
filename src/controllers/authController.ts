@@ -7,25 +7,18 @@ const authService = new AuthService();
 export class AuthController {
   async signUp(req: Request, res: Response) {
     try {
-      const { email, password, name, role } = req.body;
+      const { email, password, name } = req.body;
 
-      if (!email || !password || !name || !role) {
+      if (!email || !password || !name) {
         return res.status(400).json({
           success: false,
-          error: 'Email, password, name and role are required'
-        });
-      }
-
-      if (!Object.values(UserRole).includes(role)) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid role'
+          error: 'Email, password, and name are required'
         });
       }
 
       const result = await authService.signUp(
         { email, password },
-        { name, role }
+        { name }
       );
 
       res.status(201).json({
@@ -52,7 +45,7 @@ export class AuthController {
       }
 
       const result = await authService.login({ email, password });
-      
+
       res.status(200).json({
         success: true,
         data: result
@@ -68,7 +61,7 @@ export class AuthController {
   async getCurrentUser(req: Request, res: Response) {
     try {
       const user = await authService.getUser();
-      
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -91,7 +84,7 @@ export class AuthController {
   async logout(_req: Request, res: Response) {
     try {
       await authService.signOut();
-      
+
       res.status(200).json({
         success: true,
         message: 'Successfully logged out'

@@ -8,6 +8,7 @@ supporterRouter.use(verifyToken);
 
 supporterRouter.get('/', supporterController.getAllSupporters);
 supporterRouter.get('/tickets', supporterController.getSupporterTicketByStatus);
+supporterRouter.get('/:supporter_id/tickets', supporterController.getSupporterTicketByStatus);
 supporterRouter.get('/:supporter_id', supporterController.getSupporterById);
 supporterRouter.post('/', supporterController.createSupporter);
 supporterRouter.put('/:supporter_id', supporterController.updateSupporter);

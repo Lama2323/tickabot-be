@@ -42,7 +42,7 @@ export async function sendToResponseGemini(ticket_content: string, context: Tick
 
   try {
     const response = await llm.models.generateContent({
-      model: 'gemini-2.5-flash-lite', // tên model
+      model: 'gemini-2.5-flash', // tên model
       config: {
         thinkingConfig: {
           thinkingBudget: 0  // không suy nghĩ

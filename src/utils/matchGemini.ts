@@ -56,10 +56,10 @@ export async function sendToMatchGemini(userQuery: string, solutions: ExistingSo
 
   try {
     const response = await llm.models.generateContent({
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-2.5-flash',
       config: {
         thinkingConfig: {
-          thinkingBudget: 0,
+          thinkingBudget: -1,
         },
         responseMimeType: "application/json",
         responseJsonSchema: zodToJsonSchema(matchSchema),

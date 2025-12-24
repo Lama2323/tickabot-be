@@ -5,9 +5,9 @@ export const teamController = {
   getAllTeams: async (req: Request, res: Response) => {
     try {
       const data = await teamService.getAllTeams();
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -15,15 +15,15 @@ export const teamController = {
     try {
       const { team_id } = req.params;
       if (!team_id) {
-        return res.status(400).json({ message: 'Team ID is required' });
+        return res.status(400).json({ success: false, message: 'Team ID is required' });
       }
       const data = await teamService.getTeamById(team_id);
       if (!data) {
-        return res.status(404).json({ message: 'Team not found' });
+        return res.status(404).json({ success: false, message: 'Team not found' });
       }
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -31,12 +31,12 @@ export const teamController = {
     try {
       const { team_name, team_description } = req.body;
       if (team_name === undefined) {
-        return res.status(400).json({ message: 'Team name is required' });
+        return res.status(400).json({ success: false, message: 'Team name is required' });
       }
       const data = await teamService.createTeam(team_name, team_description);
-      res.status(201).json(data);
+      res.status(201).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -45,18 +45,18 @@ export const teamController = {
       const { team_id } = req.params;
       const { team_name, team_description } = req.body;
       if (!team_id) {
-        return res.status(400).json({ message: 'Team ID is required' });
+        return res.status(400).json({ success: false, message: 'Team ID is required' });
       }
       if (team_name === undefined) {
-        return res.status(400).json({ message: 'Team name is required' });
+        return res.status(400).json({ success: false, message: 'Team name is required' });
       }
       const data = await teamService.updateTeam(team_id, team_name, team_description);
       if (!data || data.length === 0) {
-        return res.status(404).json({ message: 'Team not found' });
+        return res.status(404).json({ success: false, message: 'Team not found' });
       }
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -64,12 +64,12 @@ export const teamController = {
     try {
       const { team_id } = req.params;
       if (!team_id) {
-        return res.status(400).json({ message: 'Team ID is required' });
+        return res.status(400).json({ success: false, message: 'Team ID is required' });
       }
       await teamService.deleteTeam(team_id);
-      res.status(204).send();
+      res.status(200).json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 };

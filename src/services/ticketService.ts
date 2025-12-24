@@ -83,6 +83,7 @@ export const ticketService = {
       (async () => {
         try {
           const routeResult = await sendToRouteGemini(ticket_content);
+          console.log("Gemini Route Result:", routeResult);
           const routeData = JSON.parse(routeResult);
 
           // Check for matching solution in Knowledge Base first
@@ -94,6 +95,7 @@ export const ticketService = {
 
             if (matchResult.foundMatch && matchResult.solution && matchResult.confidence > 0.8) {
               matchFound = true;
+              console.log("Solution found in Knowledge Base.");
 
               // Update Ticket to Resolved
               await supabase
@@ -119,6 +121,7 @@ export const ticketService = {
           if (matchFound) {
             // Case 0: Match Found (Already handled above)
           } else if (routeData.ticket_difficulty === 'easy') {
+            console.log("Ticket classified as EASY. Auto-replying...");
             // Case 1: Easy - AI Auto Reply
             const context = {
               ticket_priority: routeData.ticket_priority,
@@ -149,17 +152,23 @@ export const ticketService = {
             }]);
 
           } else {
+            console.log("Ticket classified as MEDIUM/HARD. Updating metadata...");
             // Case 2: Not Easy AND No Match - Update metadata only
-            await supabase
+            const { error: updateError } = await supabase
               .from('ticket')
               .update({
                 ticket_priority: routeData.ticket_priority,
                 ticket_tone: routeData.ticket_tone,
                 ticket_difficulty: routeData.ticket_difficulty,
                 team_id: routeData.team_id
-                // status remains 'open'
               })
               .eq('ticket_id', ticketId);
+
+            if (updateError) {
+              console.error("Error updating ticket metadata:", updateError);
+            } else {
+              console.log("Ticket metadata updated successfully.");
+            }
 
             // Added: Send detailed acknowledgement message
             let teamName = 'Support';

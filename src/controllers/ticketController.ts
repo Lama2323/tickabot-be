@@ -6,9 +6,9 @@ export const ticketController = {
   getAllTickets: async (req: Request, res: Response) => {
     try {
       const data = await ticketService.getAllTickets();
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -18,12 +18,12 @@ export const ticketController = {
       const userId = req.user.id;
 
       if (!ticket_id) {
-        return res.status(400).json({ message: 'Ticket ID is required' });
+        return res.status(400).json({ success: false, message: 'Ticket ID is required' });
       }
 
       const data = await ticketService.getTicketById(ticket_id);
       if (!data) {
-        return res.status(404).json({ message: 'Ticket not found' });
+        return res.status(404).json({ success: false, message: 'Ticket not found' });
       }
 
       // Permission Check
@@ -34,22 +34,22 @@ export const ticketController = {
         .single();
 
       if (userError || !userData) {
-        return res.status(403).json({ message: 'User profile not found' });
+        return res.status(403).json({ success: false, message: 'User profile not found' });
       }
 
       const userType = userData.user_type;
 
       if (userType === 'admin') {
         // Admin can access all
-        return res.status(200).json(data);
+        return res.status(200).json({ success: true, data });
       }
 
       if (userType === 'user') {
         // User can only access their own tickets
         if (data.user_id !== userId) {
-          return res.status(403).json({ message: 'Access denied: You do not own this ticket' });
+          return res.status(403).json({ success: false, message: 'Access denied: You do not own this ticket' });
         }
-        return res.status(200).json(data);
+        return res.status(200).json({ success: true, data });
       }
 
       if (userType === 'supporter') {
@@ -61,22 +61,19 @@ export const ticketController = {
           .single();
 
         if (!supporterData) {
-          return res.status(403).json({ message: 'Supporter profile not found' });
+          return res.status(403).json({ success: false, message: 'Supporter profile not found' });
         }
 
-        // Allow if ticket is assigned to their team
-        // Also allow if ticket is unassigned? (Policy check: Usually supporters pick up unassigned tickets, but user spec says "of team")
-        // Sticking to "of team" as per prompt "của team chưa được xử lý"
         if (data.team_id !== supporterData.team_id) {
-          return res.status(403).json({ message: 'Access denied: Ticket not assigned to your team' });
+          return res.status(403).json({ success: false, message: 'Access denied: Ticket not assigned to your team' });
         }
-        return res.status(200).json(data);
+        return res.status(200).json({ success: true, data });
       }
 
-      return res.status(403).json({ message: 'Unauthorized role' });
+      return res.status(403).json({ success: false, message: 'Unauthorized role' });
 
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -101,9 +98,9 @@ export const ticketController = {
         team_id,
         user_id
       );
-      res.status(201).json(data);
+      res.status(201).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -121,7 +118,7 @@ export const ticketController = {
       } = req.body;
 
       if (!ticket_id) {
-        return res.status(400).json({ message: 'Ticket ID is required' });
+        return res.status(400).json({ success: false, message: 'Ticket ID is required' });
       }
       // Removed validation for required fields
 
@@ -136,11 +133,11 @@ export const ticketController = {
         status // Pass status
       );
       if (!data || data.length === 0) {
-        return res.status(404).json({ message: 'Ticket not found' });
+        return res.status(404).json({ success: false, message: 'Ticket not found' });
       }
-      res.status(200).json(data);
+      res.status(200).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -151,15 +148,15 @@ export const ticketController = {
       const userId = req.user.id;
 
       if (!ticket_id) {
-        return res.status(400).json({ message: 'Ticket ID is required' });
+        return res.status(400).json({ success: false, message: 'Ticket ID is required' });
       }
       if (!content) {
-        return res.status(400).json({ message: 'Content is required' });
+        return res.status(400).json({ success: false, message: 'Content is required' });
       }
 
       // Determine sender_type based on user role
       const { data: userData } = await supabase.from('user').select('user_type').eq('user_id', userId).single();
-      if (!userData) return res.status(403).json({ message: 'User not found' });
+      if (!userData) return res.status(403).json({ success: false, message: 'User not found' });
 
       let sender_type: 'user' | 'supporter';
 
@@ -176,10 +173,10 @@ export const ticketController = {
 
       // Optional: Check if user owns the ticket or supporter is assigned (Reuse getTicket logic or similar)
       const ticket = await ticketService.getTicketById(ticket_id);
-      if (!ticket) return res.status(404).json({ message: 'Ticket not found' });
+      if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
       if (sender_type === 'user' && ticket.user_id !== userId) {
-        return res.status(403).json({ message: 'Access denied' });
+        return res.status(403).json({ success: false, message: 'Access denied' });
       }
       if (sender_type === 'supporter') {
         const { data: supporterData } = await supabase.from('supporter').select('team_id').eq('user_id', userId).single();
@@ -190,9 +187,9 @@ export const ticketController = {
       }
 
       const data = await ticketService.replyTicket(ticket_id, sender_type, content);
-      res.status(201).json(data);
+      res.status(201).json({ success: true, data });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 
@@ -200,12 +197,12 @@ export const ticketController = {
     try {
       const { ticket_id } = req.params;
       if (!ticket_id) {
-        return res.status(400).json({ message: 'Ticket ID is required' });
+        return res.status(400).json({ success: false, message: 'Ticket ID is required' });
       }
       await ticketService.deleteTicket(ticket_id);
-      res.status(204).send();
+      res.status(200).json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   },
 };
