@@ -78,118 +78,110 @@ export const ticketService = {
       }]);
     }
 
-    // 3. Process with Gemini
+    // 3. Process with Gemini - RUN IN BACKGROUND
     if (ticket_content && data && data.length > 0) {
-      try {
-        const routeResult = await sendToRouteGemini(ticket_content);
-        const routeData = JSON.parse(routeResult);
+      (async () => {
+        try {
+          const routeResult = await sendToRouteGemini(ticket_content);
+          const routeData = JSON.parse(routeResult);
 
-        // Check for matching solution in Knowledge Base first
-        let matchFound = false;
-        if (routeData.team_id) {
-          const solutions = await solutionService.getSolutionsByTeam(routeData.team_id);
-          const matchResultRaw = await sendToMatchGemini(ticket_content, solutions);
-          const matchResult = JSON.parse(matchResultRaw);
+          // Check for matching solution in Knowledge Base first
+          let matchFound = false;
+          if (routeData.team_id) {
+            const solutions = await solutionService.getSolutionsByTeam(routeData.team_id);
+            const matchResultRaw = await sendToMatchGemini(ticket_content, solutions);
+            const matchResult = JSON.parse(matchResultRaw);
 
-          if (matchResult.foundMatch && matchResult.solution && matchResult.confidence > 0.8) {
-            matchFound = true;
+            if (matchResult.foundMatch && matchResult.solution && matchResult.confidence > 0.8) {
+              matchFound = true;
 
-            // Update Ticket to Resolved
-            const { data: updatedData } = await supabase
-              .from('ticket')
-              .update({
-                ticket_priority: routeData.ticket_priority,
-                ticket_tone: routeData.ticket_tone,
-                ticket_difficulty: 'easy', // Treated as easy if auto-solved
-                team_id: routeData.team_id,
-                status: 'resolved'
-              })
-              .eq('ticket_id', ticketId)
-              .select();
+              // Update Ticket to Resolved
+              await supabase
+                .from('ticket')
+                .update({
+                  ticket_priority: routeData.ticket_priority,
+                  ticket_tone: routeData.ticket_tone,
+                  ticket_difficulty: 'easy', // Treated as easy if auto-solved
+                  team_id: routeData.team_id,
+                  status: 'resolved'
+                })
+                .eq('ticket_id', ticketId);
 
-            if (updatedData) data = updatedData;
-
-            // Insert Bot Message (Solution)
-            await supabase.from('ticket_messages').insert([{
-              ticket_id: ticketId,
-              sender_type: 'bot',
-              content: matchResult.solution
-            }]);
+              // Insert Bot Message (Solution)
+              await supabase.from('ticket_messages').insert([{
+                ticket_id: ticketId,
+                sender_type: 'bot',
+                content: matchResult.solution
+              }]);
+            }
           }
-        }
 
-        if (matchFound) {
-          // Case 0: Match Found (Already handled above)
-          // No further action needed as DB was updated in the match block
-        } else if (routeData.ticket_difficulty === 'easy') {
-          // Case 1: Easy - AI Auto Reply
-          const context = {
-            ticket_priority: routeData.ticket_priority,
-            ticket_tone: routeData.ticket_tone,
-            ticket_difficulty: routeData.ticket_difficulty,
-            team_id: routeData.team_id
-          };
-
-          const geminiResponse = await sendToResponseGemini(ticket_content, context);
-
-          // Update Ticket
-          const { data: updatedData } = await supabase
-            .from('ticket')
-            .update({
-              ticket_priority: routeData.ticket_priority,
-              ticket_tone: routeData.ticket_tone,
-              ticket_difficulty: routeData.ticket_difficulty,
-              team_id: routeData.team_id,
-              status: 'resolved'
-            })
-            .eq('ticket_id', ticketId)
-            .select();
-
-          if (updatedData) data = updatedData;
-
-          // Insert Bot Message
-          await supabase.from('ticket_messages').insert([{
-            ticket_id: ticketId,
-            sender_type: 'bot',
-            content: geminiResponse
-          }]);
-
-        } else {
-          // Case 2: Not Easy AND No Match - Update metadata only
-          const { data: updatedData } = await supabase
-            .from('ticket')
-            .update({
+          if (matchFound) {
+            // Case 0: Match Found (Already handled above)
+          } else if (routeData.ticket_difficulty === 'easy') {
+            // Case 1: Easy - AI Auto Reply
+            const context = {
               ticket_priority: routeData.ticket_priority,
               ticket_tone: routeData.ticket_tone,
               ticket_difficulty: routeData.ticket_difficulty,
               team_id: routeData.team_id
-              // status remains 'open'
-            })
-            .eq('ticket_id', ticketId)
-            .select();
+            };
 
-          if (updatedData) data = updatedData;
+            const geminiResponse = await sendToResponseGemini(ticket_content, context);
 
-          // Added: Send detailed acknowledgement message
-          let teamName = 'Support';
-          if (routeData.team_id) {
-            const { data: teamData } = await supabase
-              .from('team')
-              .select('team_name')
-              .eq('team_id', routeData.team_id)
-              .single();
-            if (teamData) teamName = teamData.team_name;
+            // Update Ticket
+            await supabase
+              .from('ticket')
+              .update({
+                ticket_priority: routeData.ticket_priority,
+                ticket_tone: routeData.ticket_tone,
+                ticket_difficulty: routeData.ticket_difficulty,
+                team_id: routeData.team_id,
+                status: 'resolved'
+              })
+              .eq('ticket_id', ticketId);
+
+            // Insert Bot Message
+            await supabase.from('ticket_messages').insert([{
+              ticket_id: ticketId,
+              sender_type: 'bot',
+              content: geminiResponse
+            }]);
+
+          } else {
+            // Case 2: Not Easy AND No Match - Update metadata only
+            await supabase
+              .from('ticket')
+              .update({
+                ticket_priority: routeData.ticket_priority,
+                ticket_tone: routeData.ticket_tone,
+                ticket_difficulty: routeData.ticket_difficulty,
+                team_id: routeData.team_id
+                // status remains 'open'
+              })
+              .eq('ticket_id', ticketId);
+
+            // Added: Send detailed acknowledgement message
+            let teamName = 'Support';
+            if (routeData.team_id) {
+              const { data: teamData } = await supabase
+                .from('team')
+                .select('team_name')
+                .eq('team_id', routeData.team_id)
+                .single();
+              if (teamData) teamName = teamData.team_name;
+            }
+
+            await supabase.from('ticket_messages').insert([{
+              ticket_id: ticketId,
+              sender_type: 'bot',
+              content: `Chào bạn, vấn đề của bạn đã được phân loại và chuyển đến team ${teamName}. Vui lòng chờ Supporter phản hồi.`
+            }]);
           }
-
-          await supabase.from('ticket_messages').insert([{
-            ticket_id: ticketId,
-            sender_type: 'bot',
-            content: `Chào bạn, vấn đề của bạn đã được phân loại và chuyển đến team ${teamName}. Vui lòng chờ Supporter phản hồi.`
-          }]);
+        } catch (err) {
+          console.error("Error processing ticket with Gemini in background:", err);
         }
-      } catch (err) {
-        console.error("Error processing ticket with Gemini:", err);
-      }
+      })();
     }
 
     return data;
