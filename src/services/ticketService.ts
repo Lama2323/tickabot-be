@@ -222,29 +222,31 @@ export const ticketService = {
       .select();
     if (error) throw error;
 
-    // Trigger Summarization if Status -> Resolved
+    // Trigger Summarization if Status -> Resolved - RUN IN BACKGROUND
     if (status === 'resolved') {
-      try {
-        // Fetch full ticket details including messages
-        const fullTicket = await getTicketByIdFunc(ticket_id);
+      // Run as an immediately-invoked async function without await
+      (async () => {
+        try {
+          // Fetch full ticket details including messages
+          const fullTicket = await getTicketByIdFunc(ticket_id);
 
-        if (fullTicket.team_id && fullTicket.messages.length > 0) {
-          const summaryRaw = await sendToSummaryGemini(fullTicket.messages);
-          const summary = JSON.parse(summaryRaw);
+          if (fullTicket.team_id && fullTicket.messages.length > 0) {
+            const summaryRaw = await sendToSummaryGemini(fullTicket.messages);
+            const summary = JSON.parse(summaryRaw);
 
-          if (summary.shouldRemember) {
-            await solutionService.createSolution(
-              fullTicket.team_id,
-              ticket_id,
-              summary.problem,
-              summary.solution
-            );
+            if (summary.shouldRemember) {
+              await solutionService.createSolution(
+                fullTicket.team_id,
+                ticket_id,
+                summary.problem,
+                summary.solution
+              );
+            }
           }
+        } catch (sumError) {
+          console.error("Error summarizing ticket in background:", sumError);
         }
-      } catch (sumError) {
-        console.error("Error summarizing ticket:", sumError);
-        // Don't throw logic error here to block the update response
-      }
+      })();
     }
 
     return data;
