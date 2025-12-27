@@ -2,4 +2,5 @@ export { ticketController } from './ticketController';
 export { userController } from './userController';
 export { teamController } from './teamController';
 export { supporterController } from './supporterController';
+export { solutionController } from './solutionController';
 export { adminController } from './adminController';
