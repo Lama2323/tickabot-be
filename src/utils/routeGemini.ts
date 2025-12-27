@@ -27,43 +27,58 @@ export async function sendToRouteGemini(ticket_content: string) {
 
   let prompt = `Phân tích ticket dưới đây và xác định các thông số sau:
 
-  **Yêu cầu:**
-  1. Độ phức tạp (ticket_difficulty):
-     - "easy": CHỈ dành cho các câu hỏi cực kỳ đơn giản, không cần người supporter hỏi làm rõ thêm bất cứ câu hỏi nào vẫn tự trả lời được. KHÔNG chọn easy nếu ticket yêu cầu cần sự can thiệp, làm rõ của supporter.
-     - "medium": Cần route đến bộ phận khác để xử lý trong các trường hợp:
-        + Ticket còn mơ hồ, "mông lung", thiếu thông tin cụ thể để có thể giải quyết ngay (Ví dụ: "máy tôi bị lỗi", "giúp tôi với", "tại sao lại thế này"). Trong trường hợp này, BẮT BUỘC chọn medium để supporter hỏi làm rõ vấn đề.
-        + Ticket hỏi về quy trình, cách cài đặt, hoặc hướng dẫn sử dụng phần mềm/dịch vụ (Ví dụ: "cài phần mềm của công ty bạn"). Những việc này cần được đưa đến đúng team phụ trách.
-     - "hard": Công việc phức tạp, lỗi hệ thống nghiêm trọng, hoặc yêu cầu can thiệp sâu từ bộ phận kỹ thuật.
+  **YÊU CẦU PHÂN TÍCH:**
 
-  **Lưu ý quan trọng:** 
-  - Nếu nội dung ticket khiến bạn cảm thấy "mông lung" hoặc chưa hiểu rõ khách hàng muốn gì, hãy đánh dấu là "medium" và chọn team phù hợp để supporter tiếp nhận.
-  - Tuyệt đối KHÔNG đánh dấu là "easy" cho các câu hỏi yêu cầu hướng dẫn (how-to) hoặc giải quyết lỗi kỹ thuật đòi hỏi cần có supporter làm rõ thêm.
+  1. Độ phức tạp (ticket_difficulty):
+     - "easy": 
+        + CHỈ dành cho các hội thoại chào hỏi xã giao (Ví dụ: "Chào", "Hello"), cảm ơn ("Cảm ơn bạn").
+        + Hoặc các câu hỏi thông tin cực kỳ đơn giản mà KHÔNG cần bất kỳ sự can thiệp hay làm rõ nào từ con người. 
+        + TUYỆT ĐỐI KHÔNG chọn "easy" nếu có bất kỳ dấu hiệu nào của lỗi kỹ thuật hoặc cần supporter hỗ trợ.
+
+     - "medium": (LỰA CHỌN MẶC ĐỊNH cho hầu hết các vấn đề cần supporter can thiệp)
+        + Ticket cần supporter hỏi làm rõ thêm thông tin vì còn mơ hồ, "mông lung" (Ví dụ: "tại sao máy tôi bị thế này?", "giúp tôi với", "lỗi rồi").
+        + Ticket yêu cầu hướng dẫn kỹ thuật, cài đặt, hoặc giải quyết sự cố.
+        + Ticket yêu cầu kiểm tra tài khoản hoặc dữ liệu người dùng.
+
+     - "hard": 
+        + Công việc cực kỳ phức tạp, lỗi hệ thống diện rộng.
+        + Yêu cầu can thiệp sâu chuyên sâu từ bộ phận kỹ thuật cấp cao.
+
+
+  **LƯU Ý QUAN TRỌNG (Để tránh việc AI "quá nhiệt tình" tự trả lời):** 
+  - Đừng cố gắng tự giải quyết vấn đề nếu nó liên quan đến kỹ thuật hoặc sự cố. Hãy ưu tiên chọn "medium" để chuyển cho supporter.
+  - Nếu nội dung ticket khiến bạn cảm thấy dù chỉ một chút "mông lung" hoặc chưa hiểu rõ khách hàng muốn gì, hãy đánh dấu là "medium".
+  - Một câu hỏi mông lung như "vì sao máy tôi bị thế này" PHẢI được đánh dấu là "medium" để supporter vào hỏi lại khách hàng, không được coi là "easy".
+
 
   2. Độ ưu tiên (ticket_priority):
-     - "high": Cần xử lý ngay, ảnh hưởng nghiêm trọng đến hệ thống/người dùng
-     - "medium": Cần xử lý sớm, nhưng không quá khẩn cấp
-     - "low": Có thể xử lý sau, không ảnh hưởng đến hoạt động chính
-  
+     - "high": Cần xử lý ngay, ảnh hưởng nghiêm trọng đến hệ thống/người dùng.
+     - "medium": Cần xử lý sớm, nhưng không quá khẩn cấp.
+     - "low": Có thể xử lý sau, không ảnh hưởng đến hoạt động chính.
+
+
   3. Cảm xúc của người dùng (ticket_tone):
-     - "happy": Vui vẻ, hài lòng
-     - "neutral": Bình thường, trung lập
-     - "frustrated": Bực bội, khó chịu
-     - "angry": Tức giận, không hài lòng
-     - "confused": Bối rối, cần giải thích thêm
+     - "happy": Vui vẻ, hài lòng.
+     - "neutral": Bình thường, trung lập.
+     - "frustrated": Bực bội, khó chịu.
+     - "angry": Tức giận, không hài lòng.
+     - "confused": Bối rối, cần giải thích thêm.
+
 
   4. Đội ngũ xử lý (team_id):
-     Dựa vào nội dung ticket và danh sách các team dưới đây, 
-     hãy chọn team_id phù hợp nhất để xử lý ticket này.
+     Dựa vào nội dung ticket và danh sách các team dưới đây, hãy chọn team_id phù hợp nhất để xử lý ticket này.
      - Nếu ticket_difficulty là "easy", hãy chọn team_id là null.
      - Nếu ticket_difficulty là "medium" hoặc "hard", BẮT BUỘC phải chọn một team_id từ danh sách bên dưới, KHÔNG được để null.
 
      Danh sách team:
      ${teamsJson}
 
-  **Ticket cần phân tích:**
+
+  **NỘI DUNG TICKET CẦN PHÂN TÍCH:**
   ${ticket_content}
 
-  **Kết quả trả về theo cấu trúc JSON sau:**
+
+  **KẾT QUẢ TRẢ VỀ (ĐỊNH DẠNG JSON):**
   {
     "ticket_difficulty": "easy | medium | hard",
     "ticket_priority": "low | medium | high",
