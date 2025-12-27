@@ -1,17 +1,9 @@
-import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
+import { googleAI } from './geminiClient';
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 
-dotenv.config();
+const llm = googleAI;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-if (!GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY is not set in .env file');
-}
-
-const llm = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const matchSchema = z.object({
   foundMatch: z.boolean(),

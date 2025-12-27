@@ -1,15 +1,7 @@
-import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
+import { googleAI } from './geminiClient';
 
-dotenv.config();
+const llm = googleAI;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-if (!GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY is not set in .env file');
-}
-
-const llm = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 interface TicketContext {
   ticket_difficulty: string;

@@ -1,18 +1,11 @@
-import { GoogleGenAI } from '@google/genai';
-import dotenv from 'dotenv';
+import { googleAI } from './geminiClient';
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { teamService } from "../services/teamService";
 
-dotenv.config();
+const llm = googleAI;
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-if (!GEMINI_API_KEY) {
-  throw new Error('GEMINI_API_KEY is not set in .env file');
-}
-
-const llm = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const routeSchema = z.object({
   ticket_difficulty: z.enum(['easy', 'medium', 'hard']),
@@ -30,25 +23,25 @@ export async function sendToRouteGemini(ticket_content: string) {
   **YÊU CẦU PHÂN TÍCH:**
 
   1. Độ phức tạp (ticket_difficulty):
-     - "easy": 
-        + CHỈ dành cho các hội thoại chào hỏi xã giao (Ví dụ: "Chào", "Hello"), cảm ơn ("Cảm ơn bạn").
-        + Hoặc các câu hỏi thông tin cực kỳ đơn giản mà KHÔNG cần bất kỳ sự can thiệp hay làm rõ nào từ con người. 
-        + TUYỆT ĐỐI KHÔNG chọn "easy" nếu có bất kỳ dấu hiệu nào của lỗi kỹ thuật hoặc cần supporter hỗ trợ.
+     - "easy": (Gemini có thể tự trả lời NGAY mà không cần hỏi lại)
+        + Các hội thoại xã giao (Chào, Cảm ơn).
+        + Các câu hỏi thông tin đơn giản, RÕ RÀNG, đầy đủ ngữ cảnh.
+        + CHỈ chọn "easy" nếu bạn CHẮC CHẮN 100% rằng câu hỏi này không cần supporter xác minh thêm thông tin và câu trả lời là hướng dẫn cơ bản.
 
-     - "medium": (LỰA CHỌN MẶC ĐỊNH cho hầu hết các vấn đề cần supporter can thiệp)
-        + Ticket cần supporter hỏi làm rõ thêm thông tin vì còn mơ hồ, "mông lung" (Ví dụ: "tại sao máy tôi bị thế này?", "giúp tôi với", "lỗi rồi").
-        + Ticket yêu cầu hướng dẫn kỹ thuật, cài đặt, hoặc giải quyết sự cố.
-        + Ticket yêu cầu kiểm tra tài khoản hoặc dữ liệu người dùng.
+     - "medium": (Cần supporter can thiệp hoặc cần làm rõ vấn đề)
+        + Câu hỏi MƠ HỒ, THIẾU THÔNG TIN (Ví dụ: "Tại sao không được?", "Lỗi rồi", "giúp tôi với", "máy tôi bị thế này"). -> Cần người hỏi lại để làm rõ.
+        + Báo cáo lỗi kỹ thuật cụ thể cần kiểm tra hệ thống hoặc can thiệp vào tài khoản.
+        + Bất cứ khi nào bạn cảm thấy cần phải hỏi lại người dùng "Ý bạn là gì?" hoặc "Vui lòng cung cấp thêm thông tin", hãy chọn "medium".
 
      - "hard": 
-        + Công việc cực kỳ phức tạp, lỗi hệ thống diện rộng.
-        + Yêu cầu can thiệp sâu chuyên sâu từ bộ phận kỹ thuật cấp cao.
+        + Công việc cực kỳ phức tạp, lỗi hệ thống nghiêm trọng, phàn nàn gay gắt.
+        + Yêu cầu can thiệp sâu từ nhiều bộ phận.
 
 
-  **LƯU Ý QUAN TRỌNG (Để tránh việc AI "quá nhiệt tình" tự trả lời):** 
-  - Đừng cố gắng tự giải quyết vấn đề nếu nó liên quan đến kỹ thuật hoặc sự cố. Hãy ưu tiên chọn "medium" để chuyển cho supporter.
-  - Nếu nội dung ticket khiến bạn cảm thấy dù chỉ một chút "mông lung" hoặc chưa hiểu rõ khách hàng muốn gì, hãy đánh dấu là "medium".
-  - Một câu hỏi mông lung như "vì sao máy tôi bị thế này" PHẢI được đánh dấu là "medium" để supporter vào hỏi lại khách hàng, không được coi là "easy".
+  **LƯU Ý QUAN TRỌNG (CÂN NHẮC KỸ LƯỠNG):** 
+  - Mục tiêu: Tự động trả lời những gì ĐƠN GIẢN và RÕ RÀNG. Chuyển cho người những gì MƠ HỒ hoặc PHỨC TẠP.
+  - VỚI CÁC CÂU HỎI MƠ HỒ (như "máy bình lỗi", "sao không vào được"): Tuyệt đối ĐỪNG đoán mò nguyên nhân để trả lời. Hãy chọn "medium" để supporter hỏi lại cho chắc chắn.
+  - Nếu câu hỏi đã RÕ RÀNG về mặt hướng dẫn sử dụng (như "Cách tạo tài khoản?"): Hãy chọn "easy" để tự trả lời, đừng làm phiền supporter.
 
 
   2. Độ ưu tiên (ticket_priority):
