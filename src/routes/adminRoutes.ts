@@ -11,6 +11,7 @@ router.use(isAdmin);
 router.get('/supporters', adminController.getAllSupporters);
 router.get('/supporters/:id', adminController.getSupporterById);
 router.post('/supporters', adminController.createSupporter);
+router.post('/supporters/add', adminController.addSupporter);
 router.put('/supporters/:id', adminController.updateSupporter);
 router.delete('/supporters/:id', adminController.deleteSupporter);
 

@@ -63,7 +63,7 @@ export class AuthService {
       // Fetch profile to get role
       const profile = await userService.getUserById(data.user.id);
       let supporterProfile = null;
-      if (profile.user_type === UserRole.SUPPORT_AGENT) {
+      if (profile.user_type === UserRole.SUPPORT_AGENT || profile.user_type === 'supporter') {
         const { data: sData, error: sError } = await supabase
           .from('supporter')
           .select('*')
@@ -112,7 +112,7 @@ export class AuthService {
     try {
       const profile = await userService.getUserById(user.id);
       let supporterProfile = null;
-      if (profile.user_type === UserRole.SUPPORT_AGENT) {
+      if (profile.user_type === UserRole.SUPPORT_AGENT || profile.user_type === 'supporter') {
         const { data: sData } = await supabase
           .from('supporter')
           .select('*')

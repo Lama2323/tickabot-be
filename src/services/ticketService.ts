@@ -207,18 +207,18 @@ export const ticketService = {
     user_id?: string,
     status?: string // Add status parameter
   ) => {
+    const updateData: any = {};
+    if (ticket_priority !== undefined) updateData.ticket_priority = ticket_priority;
+    if (ticket_content !== undefined) updateData.ticket_content = ticket_content;
+    if (ticket_tone !== undefined) updateData.ticket_tone = ticket_tone;
+    if (ticket_difficulty !== undefined) updateData.ticket_difficulty = ticket_difficulty;
+    if (team_id !== undefined) updateData.team_id = team_id;
+    if (user_id !== undefined) updateData.user_id = user_id;
+    if (status !== undefined) updateData.status = status;
+
     const { data, error } = await supabase
       .from('ticket')
-      .update({
-        ticket_priority,
-        ticket_content,
-        ticket_tone,
-        ticket_difficulty,
-
-        team_id,
-        user_id,
-        status // Update status if provided
-      })
+      .update(updateData)
       .eq('ticket_id', ticket_id)
       .select();
     if (error) throw error;

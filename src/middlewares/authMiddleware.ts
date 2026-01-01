@@ -76,6 +76,6 @@ export const isAdmin = async (req: Request, res: Response, next: NextFunction) =
 
 export const isSupporter = async (req: Request, res: Response, next: NextFunction) => {
   await verifyToken(req, res, async () => {
-    await checkRole(['supporter', 'admin'])(req, res, next); // Admins can usually act as supporters too
+    await checkRole(['supporter', 'support_agent', 'admin'])(req, res, next); // Admins can usually act as supporters too
   });
 };

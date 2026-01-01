@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { ticketService } from '../services';
 import { supabase } from '../utils/supabase';
+import { UserRole } from '../models/User';
 
 export const ticketController = {
   getAllTickets: async (req: Request, res: Response) => {
@@ -44,7 +45,7 @@ export const ticketController = {
         return res.status(200).json({ success: true, data });
       }
 
-      if (userType === 'user') {
+      if (userType === UserRole.USER) {
         // User can only access their own tickets
         if (data.user_id !== userId) {
           return res.status(403).json({ success: false, message: 'Access denied: You do not own this ticket' });
@@ -52,7 +53,7 @@ export const ticketController = {
         return res.status(200).json({ success: true, data });
       }
 
-      if (userType === 'supporter') {
+      if (userType === UserRole.SUPPORT_AGENT || userType === 'supporter') {
         // Supporter can access tickets of their team
         const { data: supporterData } = await supabase
           .from('supporter')
@@ -108,10 +109,10 @@ export const ticketController = {
     try {
       const { ticket_id } = req.params;
       const {
-        ticket_priority = null,
-        ticket_content = null,
-        ticket_tone = null,
-        ticket_difficulty = null,
+        ticket_priority,
+        ticket_content,
+        ticket_tone,
+        ticket_difficulty,
         team_id,
         user_id,
         status // Extract status
@@ -161,11 +162,9 @@ export const ticketController = {
       let sender_type: 'user' | 'supporter';
 
       // Auto-detect
-      if (userData.user_type === 'admin') {
-        // Admins act as supporters? or have their own type?
-        // Assuming admin acts as supporter strictly for this context, or we can use 'supporter'
+      if (userData.user_type === UserRole.ADMIN) {
         sender_type = 'supporter';
-      } else if (userData.user_type === 'supporter') {
+      } else if (userData.user_type === UserRole.SUPPORT_AGENT || userData.user_type === 'supporter') {
         sender_type = 'supporter';
       } else {
         sender_type = 'user';
@@ -184,6 +183,10 @@ export const ticketController = {
           // Uncomment if strict check is needed:
           // return res.status(403).json({message: 'Access denied: Not your team'});
         }
+      }
+
+      if (ticket.status === 'resolved') {
+        return res.status(400).json({ success: false, message: 'Ticket is resolved and chat is locked' });
       }
 
       const data = await ticketService.replyTicket(ticket_id, sender_type, content);

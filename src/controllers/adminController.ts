@@ -44,6 +44,27 @@ export const adminController = {
     }
   },
 
+  addSupporter: async (req: Request, res: Response) => {
+    try {
+      const { email, supporter_name, password, team_id } = req.body;
+      if (!email || !supporter_name || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Email, Supporter Name, and Password are required' 
+        });
+      }
+      const data = await supporterService.addSupporterWithAuth(
+        email,
+        supporter_name,
+        password,
+        team_id || null
+      );
+      res.status(201).json({ success: true, data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  },
+
   updateSupporter: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
