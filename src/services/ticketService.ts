@@ -87,9 +87,19 @@ export const ticketService = {
           const routeData = JSON.parse(routeResult);
 
           // Check for matching solution in Knowledge Base first
+          // Check for matching solution in Knowledge Base first
           let matchFound = false;
+
+          // Determine existing solutions to check against
+          let solutions = [];
           if (routeData.team_id) {
-            const solutions = await solutionService.getSolutionsByTeam(routeData.team_id);
+            solutions = await solutionService.getSolutionsByTeam(routeData.team_id);
+          } else {
+            // If no team is identified, check ALL solutions
+            solutions = await solutionService.getAllSolutions();
+          }
+
+          if (solutions.length > 0) {
             const matchResultRaw = await sendToMatchGemini(ticket_content, solutions);
             const matchResult = JSON.parse(matchResultRaw);
 
